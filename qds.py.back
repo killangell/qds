@@ -1,0 +1,210 @@
+import talib
+from openpyxl import Workbook
+from pandas import np
+import matplotlib.pyplot as plt
+
+from data_source.huobi.static_data_source.huobi_4hour_data_source import Huobi4HourData
+from data_source.kline_adapter_huobi import KLineAdapterHuobi
+from model.ma_table import MaTable
+from model.organized import Organized
+from control.strategy1 import Strategy1
+
+from data_source.huobi.HuobiDMService import HuobiDM
+from data_source.huobi.ReliableHuobiDMService import ReliableHuobiDM
+from pprint import pprint
+
+# https://docs.huobigroup.com/docs/dm/v1/cn/#8664ee712b
+#### input huobi dm url
+URL = 'https://api.btcgateway.pro'
+
+####  input your access_key and secret_key below:
+ACCESS_KEY = '61bf2917-d263b13d-ghxertfvbf-1ebd5'
+SECRET_KEY = '8eb611d4-7daf05ac-fc2c15ff-0b1ca'
+
+dm = ReliableHuobiDM(URL, ACCESS_KEY, SECRET_KEY)
+
+
+def SaveToFile(file_name, line_data_list):
+    wb = Workbook()
+    wb.create_sheet("Sheet")
+    # create title
+    wb['Sheet'].cell(row=1, column=1, value="ma_fast")
+    wb['Sheet'].cell(row=1, column=2, value="ma_slow")
+    wb['Sheet'].cell(row=1, column=3, value="threshold")
+    wb['Sheet'].cell(row=1, column=4, value="profit")
+    wb['Sheet'].cell(row=1, column=5, value="number")
+    wb['Sheet'].cell(row=1, column=6, value="positive")
+    wb['Sheet'].cell(row=1, column=7, value="negative")
+    wb['Sheet'].cell(row=1, column=8, value="win")
+    wb['Sheet'].cell(row=1, column=9, value="rate")
+    row_index = 2
+    for line_data in line_data_list:
+        wb['Sheet'].cell(row=row_index, column=1, value=line_data._ma_fast)
+        wb['Sheet'].cell(row=row_index, column=2, value=line_data._ma_slow)
+        wb['Sheet'].cell(row=row_index, column=3, value=line_data._threshold)
+        wb['Sheet'].cell(row=row_index, column=4, value=line_data._profit)
+        wb['Sheet'].cell(row=row_index, column=5, value=line_data._total_number)
+        wb['Sheet'].cell(row=row_index, column=6, value=line_data._positive_number)
+        wb['Sheet'].cell(row=row_index, column=7, value=line_data._negative_number)
+        wb['Sheet'].cell(row=row_index, column=8, value=line_data._win)
+        wb['Sheet'].cell(row=row_index, column=9, value=line_data._rate)
+        row_index += 1
+    wb.save("{0}.xlsx".format(file_name))
+
+
+if __name__ == "__main__":
+    if 0:
+        global_data = Organized()
+        # data_source = Huobi1HourData.GetTestData_1hour_2000_2()
+        data_source = Huobi4HourData.GetTestData_4hour_2000()
+        global_data = KLineAdapterHuobi.ParseData(data_source['data'])
+
+        print("totally {0} kline data".format(len(global_data._close_list)))
+        ma_table_list = []
+        # for ma_fast in range(3, 60):
+        #    for ma_slow in range(ma_fast + 1, 90):
+        for ma_fast in range(7, 8):
+            for ma_slow in range(30, 31):
+                close_list = global_data._close_list
+                ma_fast_list = talib.EMA(np.array(close_list), timeperiod=ma_fast)
+                ma_slow_list = talib.EMA(np.array(close_list), timeperiod=ma_slow)
+
+                global_data._ema_list[ma_fast] = ma_fast_list
+                global_data._ema_list[ma_slow] = ma_slow_list
+
+                ma_table = Strategy1.Run(ma_fast, ma_slow, global_data, True)
+                ma_table_list.append(ma_table)
+
+        SaveToFile("4hour_2000", ma_table_list)
+
+    if 0:
+        global_data = Organized()
+        ma_fast = 7
+        ma_slow = 30
+        # pprint(dm.get_contract_kline(symbol='BTC_NQ', period='4hour', size=20))
+        data_source = dm.get_contract_kline(symbol='BTC_NQ', period='4hour', size=100)
+        global_data = KLineAdapterHuobi.ParseData(data_source['data'])
+
+        close_list = global_data._close_list
+        ma_fast_list = talib.EMA(np.array(close_list), timeperiod=ma_fast)
+        ma_slow_list = talib.EMA(np.array(close_list), timeperiod=ma_slow)
+
+        global_data._ema_list[ma_fast] = ma_fast_list
+        global_data._ema_list[ma_slow] = ma_slow_list
+
+        ma_table = Strategy1.Run(ma_fast, ma_slow, global_data)
+        # SaveToFile(1, ma_table)
+        macd, signal, hist = talib.MACD(np.array(close_list), fastperiod=12, slowperiod=26, signalperiod=9)
+        global_data._hist_list = hist
+
+        macd_state = 0
+        for i in range(0, len(global_data._id_list)):
+            ts = global_data._timestamp[i]
+            macd = global_data._hist_list[i]
+            # print("{0} - {1}".format(ts, macd))
+            if macd_state == 0:
+                if macd > 0:
+                    macd_state = 1
+                elif macd < 0:
+                    macd_state = -1
+            if (macd_state == 1 and macd < 0) or (macd_state == -1 and macd > 0):
+                print("{0} - {1}".format(ts, macd))
+                if macd > 0:
+                    macd_state = 1
+                elif macd < 0:
+                    macd_state = -1
+
+        # plt.plot(close_list)
+        plt.plot(ma_fast_list)
+        plt.plot(ma_slow_list)
+        plt.grid()
+        plt.show()
+
+    if 1:
+        global_data = Organized()
+        ma_fast = 7
+        ma_slow = 30
+        global_symbol = 'BTC_NQ'
+        # pprint(dm.get_contract_kline(symbol=global_symbol, period='4hour', size=20))
+        data_source = dm.get_contract_kline(symbol=global_symbol, period='4hour', size=100)
+        global_data = KLineAdapterHuobi.ParseData(data_source['data'])
+
+        close_list = global_data._close_list
+        ma_fast_list = talib.EMA(np.array(close_list), timeperiod=ma_fast)
+        ma_slow_list = talib.EMA(np.array(close_list), timeperiod=ma_slow)
+
+        global_data._ema_list[ma_fast] = ma_fast_list
+        global_data._ema_list[ma_slow] = ma_slow_list
+
+        last_index = global_data.GetLen() - 2
+        last_ema_fast = global_data.ema_list[ma_fast][last_index]
+        last_ema_slow = global_data.ema_list[ma_slow][last_index]
+        ts = global_data._timestamp[last_index]
+        print("last: {4} ma{0}:{1}, ma{2}:{3}".format(ma_fast, last_ema_fast, ma_slow, last_ema_slow, ts))
+
+        if 1:
+            # 应该多还是空
+            # last_ema_fast > last_ema_slow: 多
+            # last_ema_fast < last_ema_slow: 空
+            # 查看持仓
+            ret = dm.get_contract_position_info("BTC")
+            # 闪电平仓
+            ret = dm.reliable_send_lightning_close_position("BTC", "next_quarter", '', 1, "sell", '', None)
+
+
+            # 限价单操作
+            '''
+            ret = dm.send_contract_order(symbol='BTC', contract_type='next_quarter', contract_code='',
+                                   client_order_id='', price=11886, volume=1, direction='sell',
+                                   offset='open', lever_rate=10, order_price_type='limit')  # 已验证成功
+            ret = dm.get_contract_open_orders("BTC")  # 已验证成功
+            ret = dm.cancel_all_contract_order("BTC")  # 已验证成功
+            ret = dm.get_contract_open_orders("BTC")  # 已验证成功
+            '''
+            # 委托单操作
+            '''
+            ret = dm.send_contract_trigger_order(symbol='BTC', contract_type='next_quarter', contract_code=None,
+                                                 trigger_type='ge', trigger_price=11870, order_price=11880,
+                                                 order_price_type='limit', volume=1, direction='sell', offset='open',
+                                                 lever_rate=10)  # 已验证成功
+            ret = dm.get_contract_trigger_openorders("BTC")  # 已验证成功
+            ret = dm.cancel_all_contract_trigger("BTC")  # 已验证成功
+            ret = dm.get_contract_trigger_openorders("BTC")  # 已验证成功
+            '''
+
+        if last_ema_fast > last_ema_slow:
+            print("long at {0}".format(last_ema_slow))
+
+            # 1. 当前有单
+            #    1.1 有空单 --> 平所有空单
+            #    1.2 有多单
+            #        1.2.1 有止盈止损 --> 忽略
+            #        1.2.2 无止盈止损 --> 设置止盈止损(ema_slow + 200)
+            # 2. 当前无单
+            #     2.1 撤销之前所有挂单
+            #     2.2 设置挂单 --> (ema_slow + 30, ema_slow - 20, ema_slow - 70)
+            # 3.
+        else:
+            print("short at {0}".format(last_ema_slow))
+
+        ma_table = Strategy1.Run(ma_fast, ma_slow, global_data)
+        # SaveToFile(1, ma_table)
+        macd, signal, hist = talib.MACD(np.array(close_list), fastperiod=12, slowperiod=26, signalperiod=9)
+        global_data._hist_list = hist
+
+        macd_state = 0
+        for i in range(0, len(global_data._id_list)):
+            ts = global_data._timestamp[i]
+            macd = global_data._hist_list[i]
+            # print("{0} - {1}".format(ts, macd))
+            if macd_state == 0:
+                if macd > 0:
+                    macd_state = 1
+                elif macd < 0:
+                    macd_state = -1
+            if (macd_state == 1 and macd < 0) or (macd_state == -1 and macd > 0):
+                print("{0} - {1}".format(ts, macd))
+                if macd > 0:
+                    macd_state = 1
+                elif macd < 0:
+                    macd_state = -1
