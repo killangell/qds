@@ -53,18 +53,18 @@ class ContractOpenOrdersHelper:
                     ret['data']['orders'][i]['price']))
 
     @staticmethod
-    def get_orders_count(direction, ret):
+    def get_orders_count(direction, offset, ret):
         count = 0
         for i in range(0, ret['data']['total_size']):
-            if ret['data']['orders'][i]['direction'] == direction:
+            if ret['data']['orders'][i]['direction'] == direction and ret['data']['orders'][i]['offset'] == offset:
                 count += ret['data']['orders'][i]['volume']
         return count
 
     @staticmethod
-    def get_price(direction, ret):
+    def get_price(direction, offset, ret):
         data = []
         for i in range(0, ret['data']['total_size']):
-            if ret['data']['orders'][i]['direction'] == direction:
+            if ret['data']['orders'][i]['direction'] == direction and ret['data']['orders'][i]['offset'] == offset:
                 price = ret['data']['orders'][i]['price']
                 data.append(price)
         return data

@@ -469,10 +469,10 @@ def run2():
         return False
     coo_helper.log_all_orders('buy', ret)
     coo_helper.log_all_orders('sell', ret)
-    limit_pending_buy_count = coo_helper.get_orders_count('buy', ret)
-    limit_pending_sell_count = coo_helper.get_orders_count('sell', ret)
-    limit_pending_buy_price_list = coo_helper.get_price('buy', ret)
-    limit_pending_sell_price_list = coo_helper.get_price('sell', ret)
+    limit_pending_buy_count = coo_helper.get_orders_count('buy', 'open', ret)
+    limit_pending_sell_count = coo_helper.get_orders_count('sell', 'open', ret)
+    limit_pending_buy_price_list = coo_helper.get_price('buy', 'open', ret)
+    limit_pending_sell_price_list = coo_helper.get_price('sell', 'open', ret)
 
     # 获取当前委托挂单多单数量，空单数量
     logging.debug("get_contract_trigger_openorders")
