@@ -4,7 +4,6 @@ from data_source.huobi.ReliableHuobiDMService import ReturnUtil as ru
 
 
 class ContractPositionInfoHelper:
-
     """
     def parse_return_value(self, ret):
         val = None
@@ -82,6 +81,7 @@ class ContractPositionInfoHelper:
     </list>				
     ts	            true	long	响应生成时间点，单位：毫秒	
     """
+
     @staticmethod
     def log_all_orders(direction, ret):
         for i in range(0, ru.get_data_list_size(ret)):
@@ -100,3 +100,11 @@ class ContractPositionInfoHelper:
             if ret['data'][i]['direction'] == direction:
                 count += ret['data'][i]['volume']
         return count
+
+    @staticmethod
+    def get_price(direction, ret):
+        data = 0
+        for i in range(0, len(ret['data'])):
+            if ret['data'][i]['direction'] == direction:
+                data += ret['data'][i]['cost_hold']
+        return data
