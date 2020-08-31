@@ -486,3 +486,10 @@ class HuobiDM:
 
         request_path = '/api/v1/contract_trigger_order'
         return api_key_post(self.__url, request_path, params, self.__access_key, self.__secret_key)
+
+    # 查询用户账户和持仓信息
+    def get_contract_account_position_info(self, symbol=''):
+        params = {'symbol': symbol}
+
+        request_path = '/api/v1/contract_account_position_info'
+        return api_key_post(self.__url, request_path, params, self.__access_key, self.__secret_key)
