@@ -31,7 +31,6 @@ logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
                     )
 
 # https://docs.huobigroup.com/docs/dm/v1/cn/#8664ee712b
-#### input huobi dm url
 URL = 'https://api.btcgateway.pro'
 
 ####  input your access_key and secret_key below:
@@ -39,40 +38,11 @@ ACCESS_KEY = '61bf2917-d263b13d-ghxertfvbf-1ebd5'
 SECRET_KEY = '8eb611d4-7daf05ac-fc2c15ff-0b1ca'
 
 dm = ReliableHuobiDM(URL, ACCESS_KEY, SECRET_KEY)
-
 trend_history = None
 
 
-def SaveToFile(file_name, line_data_list):
-    wb = Workbook()
-    wb.create_sheet("Sheet")
-    # create title
-    wb['Sheet'].cell(row=1, column=1, value="ma_fast")
-    wb['Sheet'].cell(row=1, column=2, value="ma_slow")
-    wb['Sheet'].cell(row=1, column=3, value="threshold")
-    wb['Sheet'].cell(row=1, column=4, value="profit")
-    wb['Sheet'].cell(row=1, column=5, value="number")
-    wb['Sheet'].cell(row=1, column=6, value="positive")
-    wb['Sheet'].cell(row=1, column=7, value="negative")
-    wb['Sheet'].cell(row=1, column=8, value="win")
-    wb['Sheet'].cell(row=1, column=9, value="rate")
-    row_index = 2
-    for line_data in line_data_list:
-        wb['Sheet'].cell(row=row_index, column=1, value=line_data._ma_fast)
-        wb['Sheet'].cell(row=row_index, column=2, value=line_data._ma_slow)
-        wb['Sheet'].cell(row=row_index, column=3, value=line_data._threshold)
-        wb['Sheet'].cell(row=row_index, column=4, value=line_data._profit)
-        wb['Sheet'].cell(row=row_index, column=5, value=line_data._total_number)
-        wb['Sheet'].cell(row=row_index, column=6, value=line_data._positive_number)
-        wb['Sheet'].cell(row=row_index, column=7, value=line_data._negative_number)
-        wb['Sheet'].cell(row=row_index, column=8, value=line_data._win)
-        wb['Sheet'].cell(row=row_index, column=9, value=line_data._rate)
-        row_index += 1
-    wb.save("{0}.xlsx".format(file_name))
-
-
 # holding 持仓， pending 挂单
-def run2():
+def run():
     """
     * 如果趋势发生变化，撤销所有的限价挂单以及委托挂单
     * 如果有逆势持仓，则平掉所有逆势持仓
@@ -84,7 +54,6 @@ def run2():
     global_data = Organized()
     ma_fast = 7
     ma_slow = 30
-    # pprint(dm.get_contract_kline(symbol=global_symbol, period='4hour', size=20))
     ret = dm.get_contract_kline(symbol='BTC_NQ', period='4hour', size=100)
     if not ru.is_ok(ret):
         logging.debug("get_contract_kline failed")
@@ -103,13 +72,17 @@ def run2():
     last_ema_slow = global_data.ema_list[ma_slow][last_index]
     ts = global_data._timestamp[last_index]
 
-    # 多空设置
-    trend = ''
-    # 获取当前趋势是多还是空
+    # 多空决策
+    trend = None
     if last_ema_fast > last_ema_slow:
         trend = 'long'
-    else:
+    elif last_ema_fast < last_ema_slow:
         trend = 'short'
+    else:  # 趋势不变
+        if trend_history:
+            trend = trend_history
+        else:
+            trend = 'long'
 
     # 趋势发生变化，撤销所有的限价挂单以及委托挂单
     if trend_history != trend:
@@ -132,10 +105,9 @@ def run2():
         ret = dm.get_contract_account_position_info('BTC')
         if ru.is_ok(ret):
             logging.debug("margin_available={0}, margin_balance={1}".format(ret['data'][0]['margin_available'],
-                                                                    ret['data'][0]['margin_balance']))
+                                                                            ret['data'][0]['margin_balance']))
 
     # 获取当前持仓多单数量，空单数量，价格
-    # logging.debug("get_contract_position_info")
     ret = dm.get_contract_position_info("BTC")
     if not ru.is_ok(ret):
         logging.debug("get_contract_position_info failed")
@@ -148,20 +120,20 @@ def run2():
     limit_holding_sell_price = cpi_helper.get_price('sell', ret)
 
     # 获取当前限价挂单的方向以及价格
-    # logging.debug("get_contract_open_orders")
     ret = dm.get_contract_open_orders("BTC")
     if not ru.is_ok(ret):
         logging.debug("get_contract_open_orders failed")
         return False
     coo_helper.log_all_orders('buy', ret)
     coo_helper.log_all_orders('sell', ret)
-    limit_pending_buy_count = coo_helper.get_orders_count('buy', 'open', ret)
+    limit_pending_buy_count = coo_helper.get_orders_count('buy', 'open', ret)  # 开仓
+    limit_pending_close_sell_count = coo_helper.get_orders_count('sell', 'close', ret)  # 平仓
     limit_pending_sell_count = coo_helper.get_orders_count('sell', 'open', ret)
+    limit_pending_close_buy_count= coo_helper.get_orders_count('buy', 'close', ret)
     limit_pending_buy_price_list = coo_helper.get_price('buy', 'open', ret)
     limit_pending_sell_price_list = coo_helper.get_price('sell', 'open', ret)
 
     # 获取当前委托挂单多单数量，空单数量
-    # logging.debug("get_contract_trigger_openorders")
     ret = dm.get_contract_trigger_openorders("BTC")
     if not ru.is_ok(ret):
         logging.debug("get_contract_trigger_openorders failed")
@@ -189,6 +161,7 @@ def run2():
     stop_earning_order_price = 0
     stop_earning_direction = ''
     limit_pending_on_trend_count = 0
+    limit_pending_close_on_trend_count = 0
     limit_pending_against_trend_count = 0
     limit_pending_on_trend_price_list = []
     trigger_holding_on_trend_order_price = 0
@@ -202,6 +175,7 @@ def run2():
 
         limit_pending_on_trend_open_direction = 'buy'
         limit_pending_on_trend_count = limit_pending_buy_count
+        limit_pending_close_on_trend_count = limit_pending_close_sell_count
         limit_pending_against_trend_count = limit_pending_sell_count
         limit_pending_on_trend_price_list = limit_pending_buy_price_list
 
@@ -220,6 +194,7 @@ def run2():
 
         limit_pending_on_trend_open_direction = 'sell'
         limit_pending_on_trend_count = limit_pending_sell_count
+        limit_pending_close_on_trend_count = limit_pending_close_buy_count
         limit_pending_against_trend_count = limit_pending_buy_count
         limit_pending_on_trend_price_list = limit_pending_sell_price_list
 
@@ -229,8 +204,6 @@ def run2():
         stop_earning_order_price = round(last_ema_slow - 200)
         stop_earning_trigger_price = round(stop_earning_order_price + 10)
         stop_earning_direction = 'buy'
-
-    # 计算当前是否有逆势限价挂单
 
     # 执行交易
 
@@ -323,7 +296,8 @@ def run2():
 
     # 如果有顺势持仓，则只挂止盈委托挂单，在持仓的价格上设置止盈点
     # 在只有限价单持仓的情况下，才能设置止盈委托挂单，否则会容易交易失败，而且不合逻辑
-    available_trigger_pending_on_trend_count = limit_holding_on_trend_count - trigger_holding_on_trend_count
+    available_trigger_pending_on_trend_count = limit_holding_on_trend_count - \
+                                               limit_pending_close_on_trend_count - trigger_holding_on_trend_count
     if available_trigger_pending_on_trend_count > 0:
         logging.debug("available_trigger_pending_on_trend_count={0}".format(available_trigger_pending_on_trend_count))
         ret = dm.send_contract_trigger_order(symbol='BTC', contract_type='next_quarter',
@@ -341,7 +315,6 @@ def run2():
                 stop_earning_trigger_type, round(stop_earning_trigger_price), round(stop_earning_order_price),
                 int(available_trigger_pending_on_trend_count), stop_earning_direction))
         else:
-            # logging.debug("send_contract_trigger_order failed due to {0}.{1}".format(ret['err_code'], ret['err_msg']))
             logging.debug("send_contract_trigger_order failed")
             return False
 
@@ -353,7 +326,7 @@ if __name__ == "__main__":
         logging.debug("\n\nrun_count={0}".format(run_count))
 
         try:
-            run2()
+            run()
         except Exception as e:
             pass
 
