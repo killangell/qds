@@ -168,8 +168,8 @@ def run2():
         return False
     ctoo_helper.log_all_orders('buy', ret)
     ctoo_helper.log_all_orders('sell', ret)
-    trigger_holding_buy_count = ctoo_helper.get_orders_count('buy', ret)
-    trigger_holding_sell_count = ctoo_helper.get_orders_count('sell', ret)
+    trigger_holding_buy_count = ctoo_helper.get_orders_count('buy', 'close', ret)
+    trigger_holding_sell_count = ctoo_helper.get_orders_count('sell', 'close', ret)
     # 获取当前委托挂单方向以及价格
     trigger_holding_buy_order_price = round(ctoo_helper.get_order_price('buy', ret))
     trigger_holding_sell_order_price = round(ctoo_helper.get_order_price('sell', ret))

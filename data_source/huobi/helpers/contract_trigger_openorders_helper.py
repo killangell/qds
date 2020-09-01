@@ -86,12 +86,11 @@ class ContractTriggerOpenOrdersHelper:
                     ret['data']['orders'][i]['order_price']))
 
     @staticmethod
-    def get_orders_count(direction, ret):
+    def get_orders_count(direction, offset, ret):
         count = 0
         for i in range(0, ret['data']['total_size']):
-            if ret['data']['orders'][i]['direction'] == direction:
-                count = ret['data']['orders'][i]['volume']
-                break
+            if ret['data']['orders'][i]['direction'] == direction and ret['data']['orders'][i]['offset'] == offset:
+                count += ret['data']['orders'][i]['volume']
         return count
 
     @staticmethod
