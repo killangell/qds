@@ -1,0 +1,3 @@
+打包命令：
+带控制台：   pyinstaller.exe -F qds.py --hidden-import talib.stream
+不带控制台： pyinstaller.exe -w -F qds.py --hidden-import talib.stream

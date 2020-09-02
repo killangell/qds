@@ -63,6 +63,7 @@ def debug_ema(org_data=Organized()):
             print("ema[{0}]={1} == ema[{2}]={3}".format(ma_fast, ema_fast, ma_slow, ema_slow))
     print("totally {0}".format(count))
 
+
 # holding 持仓， pending 挂单
 def run():
     """
@@ -156,7 +157,7 @@ def run():
     limit_pending_buy_count = coo_helper.get_orders_count('buy', 'open', ret)  # 开仓
     limit_pending_close_sell_count = coo_helper.get_orders_count('sell', 'close', ret)  # 平仓
     limit_pending_sell_count = coo_helper.get_orders_count('sell', 'open', ret)
-    limit_pending_close_buy_count= coo_helper.get_orders_count('buy', 'close', ret)
+    limit_pending_close_buy_count = coo_helper.get_orders_count('buy', 'close', ret)
     limit_pending_buy_price_list = coo_helper.get_price('buy', 'open', ret)
     limit_pending_sell_price_list = coo_helper.get_price('sell', 'open', ret)
 
