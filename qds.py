@@ -38,8 +38,30 @@ ACCESS_KEY = '61bf2917-d263b13d-ghxertfvbf-1ebd5'
 SECRET_KEY = '8eb611d4-7daf05ac-fc2c15ff-0b1ca'
 
 dm = ReliableHuobiDM(URL, ACCESS_KEY, SECRET_KEY)
+
+# 1min, 5min, 15min, 30min, 60min,4hour,1day, 1mon
+period = '30min'
+# 杠杆倍数
+level_rate = 10
+# ma快线周期
+ma_fast = 7
+# ma慢线周期
+ma_slow = 30
+# 盈利点数
+stop_offset = 100
+# 行情历史
 trend_history = None
 
+
+def debug_ema(org_data=Organized()):
+    count = 0
+    for i in range(0, org_data.GetLen()):
+        ema_fast = org_data.ema_list[ma_fast][i]
+        ema_slow = org_data.ema_list[ma_slow][i]
+        if ema_fast == ema_slow:
+            count += 1
+            print("ema[{0}]={1} == ema[{2}]={3}".format(ma_fast, ema_fast, ma_slow, ema_slow))
+    print("totally {0}".format(count))
 
 # holding 持仓， pending 挂单
 def run():
@@ -48,13 +70,16 @@ def run():
     * 如果有逆势持仓，则平掉所有逆势持仓
     * 如果有逆势限价挂单，则撤销所有逆势限价挂单
     * 如果没有顺势持仓，则（如果没有限价挂单，则按最优价格挂单；如果有限价挂单，检查价位是否合理，如果不合理则撤销重新挂单）
-    * 如果有顺势持仓，则只挂止盈委托挂单，在持仓的价格上设置止盈点
+    * 如果有顺势持仓，则只挂止盈委托挂单，在慢速ema价格上设置止盈点
     """
+    global period
+    global level_rate
+    global ma_fast
+    global ma_slow
+    global stop_offset
     global trend_history
     global_data = Organized()
-    ma_fast = 7
-    ma_slow = 30
-    ret = dm.get_contract_kline(symbol='BTC_NQ', period='4hour', size=100)
+    ret = dm.get_contract_kline(symbol='BTC_NQ', period=period, size=100)
     if not ru.is_ok(ret):
         logging.debug("get_contract_kline failed")
         return False
@@ -66,6 +91,8 @@ def run():
 
     global_data._ema_list[ma_fast] = ma_fast_list
     global_data._ema_list[ma_slow] = ma_slow_list
+
+    # debug_ema(global_data)
 
     last_index = global_data.GetLen() - 2
     last_ema_fast = global_data.ema_list[ma_fast][last_index]
@@ -182,7 +209,7 @@ def run():
         limit_holding_on_trend_count = limit_holding_buy_count
         limit_holding_price = limit_holding_buy_price
         stop_earning_trigger_type = 'ge'
-        stop_earning_order_price = round(last_ema_slow + 200)
+        stop_earning_order_price = round(last_ema_slow + stop_offset)
         stop_earning_trigger_price = round(stop_earning_order_price - 10)
         stop_earning_direction = 'sell'
     else:
@@ -201,7 +228,7 @@ def run():
         limit_holding_on_trend_count = limit_holding_sell_count
         limit_holding_price = limit_holding_sell_price
         stop_earning_trigger_type = 'le'
-        stop_earning_order_price = round(last_ema_slow - 200)
+        stop_earning_order_price = round(last_ema_slow - stop_offset)
         stop_earning_trigger_price = round(stop_earning_order_price + 10)
         stop_earning_direction = 'buy'
 
@@ -211,7 +238,7 @@ def run():
     if limit_holding_against_trend_count > 0:
         logging.debug("limit_holding_against_trend_count={0}".format(limit_holding_against_trend_count))
         ret = dm.send_lightning_close_position("BTC", "next_quarter", '',
-                                               limit_holding_against_trend_count,
+                                               round(limit_holding_against_trend_count),
                                                limit_holding_against_trend_close_direction,
                                                '', None)
         if ru.is_ok(ret):
@@ -255,7 +282,7 @@ def run():
                         if price > 0 and volume > 0:
                             ret = dm.send_contract_order(symbol='BTC', contract_type='next_quarter', contract_code='',
                                                          client_order_id='', price=price, volume=int(volume),
-                                                         direction=direction, offset='open', lever_rate=10,
+                                                         direction=direction, offset='open', lever_rate=level_rate,
                                                          order_price_type='limit')
                             if ru.is_ok(ret):
                                 available_limit_pending_on_trend_count -= volume
@@ -309,7 +336,7 @@ def run():
                                              volume=int(available_trigger_pending_on_trend_count),
                                              direction=stop_earning_direction,
                                              offset='close',
-                                             lever_rate=10)
+                                             lever_rate=level_rate)
         if ru.is_ok(ret):
             logging.debug("send_contract_trigger_order successfully, {0} {1} {2} {3} {4}".format(
                 stop_earning_trigger_type, round(stop_earning_trigger_price), round(stop_earning_order_price),
