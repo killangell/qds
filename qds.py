@@ -49,6 +49,10 @@ ma_fast = 7
 ma_slow = 30
 # 盈利点数
 stop_offset = 100
+# 开仓间隔
+open_offset = 30
+# 最大开仓数量
+max_open_number = 3
 # 行情历史
 trend_history = None
 
@@ -77,7 +81,9 @@ def run():
     global level_rate
     global ma_fast
     global ma_slow
+    global open_offset
     global stop_offset
+    global max_open_number
     global trend_history
     global_data = Organized()
     ret = dm.get_contract_kline(symbol='BTC_NQ', period=period, size=100)
@@ -175,9 +181,9 @@ def run():
     trigger_holding_sell_order_price = round(ctoo_helper.get_order_price('sell', ret))
 
     # 设置最大允许操作数量(挂单数量+持仓数量)
-    max_on_trend_count = 3
+    max_on_trend_count = max_open_number
     # 最优限价挂单价格
-    limit_best_price = [round(last_ema_slow - 50), round(last_ema_slow), round(last_ema_slow + 50)]
+    limit_best_price = [round(last_ema_slow - open_offset), round(last_ema_slow), round(last_ema_slow + open_offset)]
     # 计算当前是否有逆势持仓
     limit_holding_against_trend_count = 0
     limit_holding_against_trend_close_direction = ''

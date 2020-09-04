@@ -1,3 +1,17 @@
 打包命令：
 带控制台：   pyinstaller.exe -F qds.py --hidden-import talib.stream
 不带控制台： pyinstaller.exe -w -F qds.py --hidden-import talib.stream
+
+pip install PyQt5 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip3 install PyQt5-tools -i http://pypi.douban.com/simple --trusted-host=pypi.douban.com
+https://blog.csdn.net/weixin_41929524/article/details/81456308
+
+使用pyqt5时运行报错'mywindow' object has no attribute 'accept':
+http://blog.sina.com.cn/s/blog_64e1004d0102wrov.html
+
+Qt5界面信号槽:
+https://blog.csdn.net/weixin_41929524/article/details/81456308
+https://blog.csdn.net/weixin_41929524/article/details/81475935
+
+pyuic5 -o qds_gui.py qds_gui.ui
+pyrcc5.exe -o xml_rc.py xml.qrc
