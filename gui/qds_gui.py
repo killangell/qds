@@ -5,15 +5,17 @@
 # Created by: PyQt5 UI code generator 5.13.2
 #
 # WARNING! All changes made in this file will be lost!
+import logging
 import os
+import threading
 import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 from xml_rc import *
+from qds import set_buniness_enabled, get_business_enabled, run_business
 
 start_point = 0
-enable_read_log = False
 system_running = False
 
 
@@ -30,7 +32,7 @@ class Runthread(QtCore.QThread):
 
     def run(self):
         # self._signal.emit('hello');  # 可以在这里写信号焕发
-        while enable_read_log:
+        while system_running:
             # self._signal.emit('hello');  # 可以在这里写信号焕发
             self.read_logs()
             time.sleep(5)
@@ -40,6 +42,8 @@ class Runthread(QtCore.QThread):
 
     def read_logs(self):
         log_file = "{0}\\..\\qds.log".format(os.getcwd())
+        if not os.path.exists(log_file):
+            return
         fo = open(log_file, "rb")  # 一定要用'rb'因为seek 是以bytes来计算的
         # print("文件名为: ", fo.name)
         global start_point  # 使用全局变量，让start_point 时刻保持在已经输出过的那个字节位
@@ -52,37 +56,73 @@ class Runthread(QtCore.QThread):
         fo.close()
 
 
+class Runthread_Business(QtCore.QThread):
+    # python3,pyqt5与之前的版本有些不一样
+    #  通过类成员对象定义信号对象
+    _signal = pyqtSignal(str)
+
+    def __init__(self, p=None, mf=None, ms=None, oo=None, so=None, lr=None, mn=None, parent=None):
+        super(Runthread_Business, self).__init__()
+        self.period = p
+        self.ma_fast = mf
+        self.ma_slow = ms
+        self.open_offset = oo
+        self.stop_offset = so
+        self.level_rate = lr
+        self.max_open_number = mn
+
+        self.setTerminationEnabled(True)
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        # self._signal.emit('hello');  # 可以在这里写信号焕发
+        count = 0
+        while system_running:
+            set_buniness_enabled(True)
+            if count % 60 == 0:
+                try:
+                    print('{0} qt thread run'.format(count/60))
+                    logging.debug("count={0}".format(count/60))
+                    run_business(self.period, self.ma_fast, self.ma_slow, self.open_offset,
+                                 self.stop_offset, self.level_rate, self.max_open_number)
+                except Exception as e:
+                    pass
+            count += 1
+            time.sleep(1)
+        set_buniness_enabled(False)
+
+
 # 信号焕发，我是通过我封装类的回调来发起的
 
 
 class Ui_qds_gui(object):
-    def run_reading_log(self):
-        global enable_read_log
-        # 创建线程
-        self.thread = Runthread()
-        # 连接信号
-        self.thread._signal.connect(self.callbacklog)
-        # 开始线程
-        enable_read_log = True
-        self.thread.start()
-
     def run_reading_thread(self, enabled):
-        global enable_read_log
         if enabled:
             # 创建线程
             self.thread = Runthread()
             # 连接信号
             self.thread._signal.connect(self.callbacklog)
             # 开始线程
-            enable_read_log = True
             self.thread.start()
         else:
-            enable_read_log = False
             self.thread._signal.disconnect(self.callbacklog)
 
     def callbacklog(self, msg):
         # 将回调数据输出到文本框
         self.txt_log.appendPlainText(msg)
+
+    def run_business_thread(self, enabled, period=None, ema_fast=None, ema_slow=None, open_offset=None,
+                             stop_offset=None, level_rate=None, max_number=None):
+        if enabled:
+            set_buniness_enabled(True)
+            self.thread2 = Runthread_Business()
+            self.thread2.start()
+        else:
+            set_buniness_enabled(False)
+            self.thread2.terminate()
+            self.thread2.wait()
 
     def setupUi(self, qds_gui):
         qds_gui.setObjectName("qds_gui")
@@ -262,32 +302,17 @@ class Ui_qds_gui(object):
                 return
 
             self.btn_switch.setText('停止')
-            # self.run_reading_log()
-            self.run_reading_thread(True)
-            self.set_all_enabled(False)
             system_running = True
+            self.set_all_enabled(False)
+            self.run_business_thread(True, period, ema_fast, ema_slow, multi_times_offset_to_ema_slow,
+                                     stop_earning_offset_to_ema_slow, level_rate, max_number)
+            self.run_reading_thread(True)
         else:
             self.btn_switch.setText('开始')
-            # self.run_reading_log()
+            system_running = False
+            self.run_business_thread(False)
             self.run_reading_thread(False)
             self.set_all_enabled(True)
-            system_running = False
-
-        '''
-        a = self.tail('test.py')
-        this_file_absolute_path1 = os.path.realpath('test.py')
-        tail = '{0}\\tail.exe'.format(os.getcwd())
-        cmd = '{0} -f {1}'.format(tail, this_file_absolute_path1)
-        content = os.popen(cmd).read()
-        cmd = 'dir {0}'.format(os.getcwd())
-        content = os.popen(cmd).read()
-        print(os.getcwd())  # 获取当前工作目录路径
-        print(os.path.abspath('.')) # 获取当前工作目录路径
-        print(os.path.abspath('test.txt')) # 获取当前目录文件下的工作目录路径
-        print(os.path.abspath('..')) # 获取当前工作的父目录 ！注意是父目录路径
-        print(os.path.abspath(os.curdir)) # 获取当前工作目录路径
-        b = 1
-        '''
 
     def is_number(self, s):
         if s[0] == "-" or s[0] in "0123456789":
@@ -319,8 +344,8 @@ class Ui_qds_gui(object):
         self.label_11.setText(_translate("qds_gui", "止损偏移"))
         self.label_13.setText(_translate("qds_gui", "分批建仓"))
         self.label_4.setText(_translate("qds_gui", "交易所"))
-        self.btn_switch.setText(_translate("qds_gui", "开始/停止"))
-        self.btn_reset.setText(_translate("qds_gui", "重置参数"))
+        self.btn_switch.setText(_translate("qds_gui", "开始"))
+        self.btn_reset.setText(_translate("qds_gui", "重置"))
         self.lbl_total_cash.setText(_translate("qds_gui", "总金额: $50"))
         self.set_default()
 
@@ -331,7 +356,7 @@ class Ui_qds_gui(object):
 
         self.cbx_exchange.setCurrentIndex(0)
         self.cbx_category.setCurrentIndex(0)
-        self.cbx_period.setCurrentIndex(5)
+        self.cbx_period.setCurrentIndex(3)
         self.txt_ema_fast.setText('7')
         self.txt_ema_slow.setText('30')
         self.txt_one_time.setText('')
@@ -355,6 +380,7 @@ class Ui_qds_gui(object):
         self.txt_stop_loss_offset.setEnabled(en)
         self.txt_level_rate.setEnabled(en)
         self.txt_max_num.setEnabled(en)
+        self.btn_reset.setEnabled(en)
 
 
 import xml_rc

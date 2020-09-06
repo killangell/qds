@@ -202,7 +202,7 @@ def run():
 
     if trend == 'long':
         limit_holding_against_trend_count = limit_holding_sell_count
-        limit_holding_against_trend_close_direction = 'open'
+        limit_holding_against_trend_close_direction = 'buy'
         trigger_holding_against_trend_count = trigger_holding_sell_count
         trigger_holding_on_trend_count = trigger_holding_sell_count
         trigger_holding_on_trend_order_price = trigger_holding_sell_order_price
@@ -351,6 +351,40 @@ def run():
         else:
             logging.debug("send_contract_trigger_order failed")
             return False
+
+
+run_business_enabled = False
+
+
+def set_buniness_enabled(enabled):
+    global run_business_enabled
+    run_business_enabled = enabled
+
+def get_business_enabled():
+    global run_business_enabled
+    return run_business_enabled
+
+
+def run_business(p=None, mf=None, ms=None, oo=None, so=None, lr=None, mn=None):
+    global period
+    global level_rate
+    global ma_fast
+    global ma_slow
+    global open_offset
+    global stop_offset
+    global max_open_number
+    global run_business_enabled
+
+    period = p
+    ma_fast = mf
+    ma_slow = ms
+    open_offset = oo
+    stop_offset = so
+    level_rate = lr
+    max_open_number = mn
+
+    if run_business_enabled:
+        return run()
 
 
 if __name__ == "__main__":
