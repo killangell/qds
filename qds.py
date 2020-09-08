@@ -18,6 +18,7 @@ from data_source.huobi.ReliableHuobiDMService import ReturnUtil as ru
 from data_source.huobi.helpers.contract_position_info_helper import ContractPositionInfoHelper as cpi_helper
 from data_source.huobi.helpers.contract_openorders_helper import ContractOpenOrdersHelper as coo_helper
 from data_source.huobi.helpers.contract_trigger_openorders_helper import ContractTriggerOpenOrdersHelper as ctoo_helper
+from utils.config_helper import ConfigHelper, ConfigData
 
 from pprint import pprint
 
@@ -33,6 +34,7 @@ logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
 # https://docs.huobigroup.com/docs/dm/v1/cn/#8664ee712b
 URL = 'https://api.btcgateway.pro'
 
+"""
 ####  input your access_key and secret_key below:
 ACCESS_KEY = '61bf2917-d263b13d-ghxertfvbf-1ebd5'
 SECRET_KEY = '8eb611d4-7daf05ac-fc2c15ff-0b1ca'
@@ -53,6 +55,39 @@ stop_offset = 100
 open_offset = 30
 # 最大开仓数量
 max_open_number = 3
+"""
+
+file = 'config.xml'
+config_helper = ConfigHelper(file)
+config = ConfigData()
+ret = config_helper.init_root()
+if ret:
+    config_helper.parse(config)
+else:
+    print("error file {0}".format(file))
+    exit(-1)
+
+####  input your access_key and secret_key below:
+ACCESS_KEY = config._access_key
+SECRET_KEY = config._secret_key
+
+dm = ReliableHuobiDM(URL, ACCESS_KEY, SECRET_KEY)
+
+# 1min, 5min, 15min, 30min, 60min,4hour,1day, 1mon
+period = config._period
+# 杠杆倍数
+level_rate = int(config._level_rate)
+# ma快线周期
+ma_fast = int(config._ma_fast)
+# ma慢线周期
+ma_slow = int(config._ma_slow)
+# 盈利点数
+stop_offset = int(config._stop_offset)
+# 开仓间隔
+open_offset = int(config._open_offset)
+# 最大开仓数量
+max_open_number = int(config._max_open_number)
+
 # 行情历史
 trend_history = None
 
@@ -78,14 +113,16 @@ def run():
     * 如果有顺势持仓，则只挂止盈委托挂单，在慢速ema价格上设置止盈点
     """
     global period
-    global level_rate
     global ma_fast
     global ma_slow
     global open_offset
     global stop_offset
+    global level_rate
     global max_open_number
     global trend_history
     global_data = Organized()
+    logging.debug("qds params: {0}, {1}, {2}, {3}, {4}, {5}, {6}".format(period, ma_fast, ma_slow, open_offset,
+                                                                              stop_offset, level_rate, max_open_number))
     ret = dm.get_contract_kline(symbol='BTC_NQ', period=period, size=100)
     if not ru.is_ok(ret):
         logging.debug("get_contract_kline failed")
@@ -119,6 +156,7 @@ def run():
             trend = 'long'
 
     # 趋势发生变化，撤销所有的限价挂单以及委托挂单
+    logging.debug("ts:{0} ma{1}:{2}, ma{3}:{4}".format(ts, ma_fast, last_ema_fast, ma_slow, last_ema_slow))
     if trend_history != trend:
         trend_history = trend
         logging.debug(
