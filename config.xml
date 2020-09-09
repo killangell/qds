@@ -6,14 +6,23 @@
     <params>
         <!--<exchange>Huobi</exchange>-->
         <!--<category>BTC</category>-->
-        <period>30min</period>
+        <!-- 周期: 1min, 5min, 15min, 30min, 60min,4hour,1day, 1mon -->
+        <period>5min</period>
+        <!-- EMA 快线: default is 7 -->
         <ema_fast>7</ema_fast>
+        <!-- EMA 慢线: default is 30, ema_slow should > ema_fast-->
         <ema_slow>30</ema_slow>
-        <one_time_open>30</one_time_open>
+        <open_offset>100</open_offset>
+        <open_interval>0</open_interval>
         <!--<multi_times_open>30</multi_times_open>-->
-        <stop_earning_offset>100</stop_earning_offset>
+        <stop_earning_offset>150</stop_earning_offset>
         <!--<stop_loss_offset>100</stop_loss_offset>-->
-        <level_rate>10</level_rate>
+        <!-- level_rate: 杠杆倍数 -->
+        <level_rate>20</level_rate>
+        <!-- max_open_number: 最大允许建仓数量(张)，需自己确保数量在当前杠杆倍数下有效 -->
         <max_open_number>3</max_open_number>
     </params>
+    <register>
+        <qds_id>7be420b279254421bb766a5b63077ddee81bc452</qds_id>
+    </register>
 </root>

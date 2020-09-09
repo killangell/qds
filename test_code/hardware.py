@@ -16,7 +16,7 @@ for cpu in c.Win32_Processor():
 # 主板序列号
 print("board_id\n")
 for board_id in c.Win32_BaseBoard():
-    print(board_id.SerialNumber)
+    print(board_id.SerialNumber.strip())
 
 # mac地址
 print("mac\n")

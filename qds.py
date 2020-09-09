@@ -5,7 +5,7 @@ import talib
 from openpyxl import Workbook
 from pandas import np
 import matplotlib.pyplot as plt
-
+from pprint import pprint
 from data_source.huobi.static_data_source.huobi_4hour_data_source import Huobi4HourData
 from data_source.kline_adapter_huobi import KLineAdapterHuobi
 from model.ma_table import MaTable
@@ -19,8 +19,8 @@ from data_source.huobi.helpers.contract_position_info_helper import ContractPosi
 from data_source.huobi.helpers.contract_openorders_helper import ContractOpenOrdersHelper as coo_helper
 from data_source.huobi.helpers.contract_trigger_openorders_helper import ContractTriggerOpenOrdersHelper as ctoo_helper
 from utils.config_helper import ConfigHelper, ConfigData
+from utils.register import Register
 
-from pprint import pprint
 
 logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
                     filename='qds.log',
@@ -64,7 +64,12 @@ ret = config_helper.init_root()
 if ret:
     config_helper.parse(config)
 else:
-    print("error file {0}".format(file))
+    print("Error, please check file {0}".format(file))
+    exit(-1)
+
+register_info = Register.get_register_info()
+if register_info != config._qds_id:
+    print("Error, software is not correctly registered. Please contact 313970187@qq.com to register")
     exit(-1)
 
 ####  input your access_key and secret_key below:
@@ -75,16 +80,18 @@ dm = ReliableHuobiDM(URL, ACCESS_KEY, SECRET_KEY)
 
 # 1min, 5min, 15min, 30min, 60min,4hour,1day, 1mon
 period = config._period
-# 杠杆倍数
-level_rate = int(config._level_rate)
 # ma快线周期
 ma_fast = int(config._ma_fast)
 # ma慢线周期
 ma_slow = int(config._ma_slow)
 # 盈利点数
 stop_offset = int(config._stop_offset)
-# 开仓间隔
+# 开仓距离ma_slow的点位数，如果要在ma_slow处建仓应该设置为0
 open_offset = int(config._open_offset)
+# 分批建仓间隔点位数，如果要一次建仓，应该设置为0
+open_interval = int(config._open_interval)
+# 杠杆倍数
+level_rate = int(config._level_rate)
 # 最大开仓数量
 max_open_number = int(config._max_open_number)
 
@@ -116,13 +123,15 @@ def run():
     global ma_fast
     global ma_slow
     global open_offset
+    global open_interval
     global stop_offset
     global level_rate
     global max_open_number
     global trend_history
     global_data = Organized()
-    logging.debug("qds params: {0}, {1}, {2}, {3}, {4}, {5}, {6}".format(period, ma_fast, ma_slow, open_offset,
-                                                                              stop_offset, level_rate, max_open_number))
+    logging.debug("qds params: period={0}, ma_fast={1}, ma_slow={2}, open_offset={3}, open_interval={4}, "
+                  "stop_offset={5}, level_rate={6}, max_open_number={7}".format(
+        period, ma_fast, ma_slow, open_offset, open_interval, stop_offset, level_rate, max_open_number))
     ret = dm.get_contract_kline(symbol='BTC_NQ', period=period, size=100)
     if not ru.is_ok(ret):
         logging.debug("get_contract_kline failed")
@@ -220,8 +229,7 @@ def run():
 
     # 设置最大允许操作数量(挂单数量+持仓数量)
     max_on_trend_count = max_open_number
-    # 最优限价挂单价格
-    limit_best_price = [round(last_ema_slow - open_offset), round(last_ema_slow), round(last_ema_slow + open_offset)]
+
     # 计算当前是否有逆势持仓
     limit_holding_against_trend_count = 0
     limit_holding_against_trend_close_direction = ''
@@ -237,8 +245,9 @@ def run():
     limit_pending_against_trend_count = 0
     limit_pending_on_trend_price_list = []
     trigger_holding_on_trend_order_price = 0
-
+    base_open_point = 0
     if trend == 'long':
+        base_open_point = last_ema_slow - open_offset
         limit_holding_against_trend_count = limit_holding_sell_count
         limit_holding_against_trend_close_direction = 'buy'
         trigger_holding_against_trend_count = trigger_holding_sell_count
@@ -258,6 +267,7 @@ def run():
         stop_earning_trigger_price = round(stop_earning_order_price - 10)
         stop_earning_direction = 'sell'
     else:
+        base_open_point = last_ema_slow + open_offset
         limit_holding_against_trend_count = limit_holding_buy_count
         limit_holding_against_trend_close_direction = 'sell'
         trigger_holding_against_trend_count = trigger_holding_buy_count
@@ -277,8 +287,14 @@ def run():
         stop_earning_trigger_price = round(stop_earning_order_price + 10)
         stop_earning_direction = 'buy'
 
+    # 最优限价挂单价格
+    limit_best_price = [
+        round(base_open_point - open_interval),
+        round(base_open_point),
+        round(base_open_point + open_interval)
+    ]
+    logging.debug("limit_best_price={0}, {1}, {2}".format(limit_best_price[0], limit_best_price[1], limit_best_price[2]))
     # 执行交易
-
     # 平掉所有逆势持仓
     if limit_holding_against_trend_count > 0:
         logging.debug("limit_holding_against_trend_count={0}".format(limit_holding_against_trend_count))
@@ -397,6 +413,7 @@ run_business_enabled = False
 def set_buniness_enabled(enabled):
     global run_business_enabled
     run_business_enabled = enabled
+
 
 def get_business_enabled():
     global run_business_enabled
