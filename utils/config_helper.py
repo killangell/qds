@@ -3,6 +3,8 @@ from xml.dom.minidom import parse
 
 class ConfigData:
     def __init__(self):
+        self.root = None
+        self.dom = None
         # account
         self._access_key = None
         self._secret_key = None
@@ -12,8 +14,10 @@ class ConfigData:
         self._ma_fast = None
         self._ma_slow = None
         self._open_offset = None
+        self._open_interval = None
         self._stop_offset = None
         self._max_open_number = None
+        self._qds_id = None
 
 
 class ConfigHelper:
@@ -23,8 +27,8 @@ class ConfigHelper:
 
     def init_root(self):
         try:
-            dom = parse(self.file)
-            self.root = dom.documentElement
+            self.dom = parse(self.file)
+            self.root = self.dom.documentElement
             return True
         except Exception as e:
             return False
@@ -36,19 +40,40 @@ class ConfigHelper:
         value = node_list[0].childNodes[0].nodeValue
         return value
 
+    def set_node_value(self, name=None, value=None):
+        node_list = self.root.getElementsByTagName(name)
+        if (len(node_list)) == 0:
+            return False
+        node_list[0].childNodes[0].data = value
+        return True
+
     def parse(self, config=ConfigData()):
         config._access_key = self.get_node_value('access_key')
         config._secret_key = self.get_node_value('secret_key')
         config._period = self.get_node_value('period')
         config._ma_fast = self.get_node_value('ema_fast')
         config._ma_slow = self.get_node_value('ema_slow')
-        config._open_offset = self.get_node_value('one_time_open')
-        # config._multi_times_open = self.get_node_value('multi_times_open')
-        # config._stop_earning_offset = self.get_node_value('stop_earning_offset')
-        # config._stop_loss_offset = self.get_node_value('stop_loss_offset')
+        config._open_offset = self.get_node_value('open_offset')
+        config._open_interval = self.get_node_value('open_interval')
         config._stop_offset = self.get_node_value('stop_earning_offset')
         config._level_rate = self.get_node_value('level_rate')
         config._max_open_number = self.get_node_value('max_open_number')
+        config._qds_id = self.get_node_value('qds_id')
+
+    def save(self, config=ConfigData()):
+        self.set_node_value('access_key', config._access_key)
+        self.set_node_value('secret_key', config._secret_key)
+        self.set_node_value('period', config._period)
+        self.set_node_value('ema_fast', config._ema_fast)
+        self.set_node_value('ema_slow', config._ema_slow)
+        self.set_node_value('open_offset', config._open_offset)
+        self.set_node_value('open_interval', config._open_interval)
+        self.set_node_value('stop_earning_offset', config._stop_earning_offset)
+        self.set_node_value('level_rate', config._level_rate)
+        self.set_node_value('max_open_number', config._max_open_number)
+        self.set_node_value('qds_id', config._qds_id)
+        with open(self.file, "w", encoding="utf-8") as f:
+            self.dom.writexml(f)
 
 
 if __name__ == "__main__":
@@ -64,9 +89,25 @@ if __name__ == "__main__":
         d = config._ma_fast
         e = config._ma_slow
         f = config._open_offset
-        g = config._stop_offset
-        h = config._level_rate
-        i = config._max_open_number
-        j = 0
+        g = config._open_interval
+        h = config._stop_offset
+        i = config._level_rate
+        j = config._max_open_number
+        k = config._qds_id
+        l = 0
+
+        config_to_save = ConfigData()
+        config_to_save._access_key = '_access_key'
+        config_to_save._secret_key = '_secret_key'
+        config_to_save._period = '_period'
+        config_to_save._ema_fast = '_ema_fast'
+        config_to_save._ema_slow = '_ema_slow'
+        config_to_save._open_offset = '_open_offset'
+        config_to_save._open_interval = '_open_interval'
+        config_to_save._stop_earning_offset = '_stop_earning_offset'
+        config_to_save._level_rate = '_level_rate'
+        config_to_save._max_open_number = 'max_open_number'
+        config_to_save._qds_id = 'qds_id'
+        config_helper.save(config_to_save)
     else:
         print("error file {0}".format(file))
