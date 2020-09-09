@@ -32,16 +32,17 @@ class Runthread(QtCore.QThread):
 
     def run(self):
         # self._signal.emit('hello');  # 可以在这里写信号焕发
-        while system_running:
+        while True:
             # self._signal.emit('hello');  # 可以在这里写信号焕发
             self.read_logs()
-            time.sleep(5)
+            time.sleep(1)
+        # logging.debug("stop reading logs")
 
     def callback(self, msg):
         pass
 
     def read_logs(self):
-        log_file = "{0}\\..\\qds.log".format(os.getcwd())
+        log_file = "qds.log".format(os.getcwd())
         if not os.path.exists(log_file):
             return
         fo = open(log_file, "rb")  # 一定要用'rb'因为seek 是以bytes来计算的
@@ -61,12 +62,13 @@ class Runthread_Business(QtCore.QThread):
     #  通过类成员对象定义信号对象
     _signal = pyqtSignal(str)
 
-    def __init__(self, p=None, mf=None, ms=None, oo=None, so=None, lr=None, mn=None, parent=None):
+    def __init__(self, p=None, mf=None, ms=None, oo=None, oi=None, so=None, lr=None, mn=None, parent=None):
         super(Runthread_Business, self).__init__()
         self.period = p
         self.ma_fast = mf
         self.ma_slow = ms
         self.open_offset = oo
+        self.open_interval = oi
         self.stop_offset = so
         self.level_rate = lr
         self.max_open_number = mn
@@ -83,14 +85,15 @@ class Runthread_Business(QtCore.QThread):
             set_buniness_enabled(True)
             if count % 60 == 0:
                 try:
-                    print('{0} qt thread run'.format(count/60))
-                    logging.debug("count={0}".format(count/60))
-                    run_business(self.period, self.ma_fast, self.ma_slow, self.open_offset,
+                    logging.debug("running count={0}".format(int(count/60)))
+                    run_business(self.period, self.ma_fast, self.ma_slow, self.open_offset, self.open_interval,
                                  self.stop_offset, self.level_rate, self.max_open_number)
                 except Exception as e:
                     pass
             count += 1
             time.sleep(1)
+
+        logging.debug("stop trading")
         set_buniness_enabled(False)
 
 
@@ -108,20 +111,22 @@ class Ui_qds_gui(object):
             self.thread.start()
         else:
             self.thread._signal.disconnect(self.callbacklog)
+            self.thread.wait()
 
     def callbacklog(self, msg):
         # 将回调数据输出到文本框
         self.txt_log.appendPlainText(msg)
 
     def run_business_thread(self, enabled, period=None, ema_fast=None, ema_slow=None, open_offset=None,
-                             stop_offset=None, level_rate=None, max_number=None):
+                            open_interval=None, stop_offset=None, level_rate=None, max_number=None):
         if enabled:
             set_buniness_enabled(True)
-            self.thread2 = Runthread_Business()
+            self.thread2 = Runthread_Business(period, ema_fast, ema_slow, open_offset, open_interval,
+                             stop_offset, level_rate, max_number)
             self.thread2.start()
         else:
             set_buniness_enabled(False)
-            self.thread2.terminate()
+            # self.thread2.terminate()
             self.thread2.wait()
 
     def setupUi(self, qds_gui):
@@ -160,9 +165,9 @@ class Ui_qds_gui(object):
         self.txt_ema_slow = QtWidgets.QTextEdit(self.groupBox)
         self.txt_ema_slow.setGeometry(QtCore.QRect(300, 150, 81, 31))
         self.txt_ema_slow.setObjectName("txt_ema_slow")
-        self.txt_one_time = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_one_time.setGeometry(QtCore.QRect(100, 210, 81, 31))
-        self.txt_one_time.setObjectName("txt_one_time")
+        self.txt_open_offset = QtWidgets.QTextEdit(self.groupBox)
+        self.txt_open_offset.setGeometry(QtCore.QRect(100, 210, 81, 31))
+        self.txt_open_offset.setObjectName("txt_open_offset")
         self.txt_stop_earning_offset = QtWidgets.QTextEdit(self.groupBox)
         self.txt_stop_earning_offset.setGeometry(QtCore.QRect(100, 270, 81, 31))
         self.txt_stop_earning_offset.setObjectName("txt_stop_earning_offset")
@@ -191,9 +196,9 @@ class Ui_qds_gui(object):
         self.label_13 = QtWidgets.QLabel(self.groupBox)
         self.label_13.setGeometry(QtCore.QRect(230, 220, 54, 12))
         self.label_13.setObjectName("label_13")
-        self.txt_multi_times = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_multi_times.setGeometry(QtCore.QRect(300, 210, 81, 31))
-        self.txt_multi_times.setObjectName("txt_multi_times")
+        self.txt_open_interval = QtWidgets.QTextEdit(self.groupBox)
+        self.txt_open_interval.setGeometry(QtCore.QRect(300, 210, 81, 31))
+        self.txt_open_interval.setObjectName("txt_open_interval")
         self.label_4 = QtWidgets.QLabel(self.groupBox)
         self.label_4.setGeometry(QtCore.QRect(30, 40, 54, 12))
         self.label_4.setObjectName("label_4")
@@ -220,23 +225,24 @@ class Ui_qds_gui(object):
         self.txt_log = QtWidgets.QPlainTextEdit(qds_gui)
         self.txt_log.setGeometry(QtCore.QRect(10, 460, 921, 301))
         self.txt_log.setObjectName("txt_log")
+        """
+        self.menu_bar = QtWidgets.QMenuBar(qds_gui)
+        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 637, 22))
+        self.menu_bar.setObjectName("menuBar")
+        self.menu_about = QtWidgets.QMenu(self.menu_bar)
+        self.menu_about.setObjectName("about")
+        """
 
         self.retranslateUi(qds_gui)
-        self.txt_one_time.textChanged.connect(self.txt_multi_times_clear)
-        self.txt_multi_times.textChanged.connect(self.txt_one_time_clear)
         self.btn_switch.clicked.connect(self.btn_switch_click)
         self.btn_reset.clicked.connect(self.set_default)
         QtCore.QMetaObject.connectSlotsByName(qds_gui)
 
-    def txt_multi_times_clear(self):
-        self.txt_multi_times.textChanged.disconnect(self.txt_one_time_clear)
-        self.txt_multi_times.setText('')
-        self.txt_multi_times.textChanged.connect(self.txt_one_time_clear)
-
-    def txt_one_time_clear(self):
-        self.txt_one_time.textChanged.disconnect(self.txt_multi_times_clear)
-        self.txt_one_time.setText('')
-        self.txt_one_time.textChanged.connect(self.txt_multi_times_clear)
+        self.thread = Runthread()
+        # 连接信号
+        self.thread._signal.connect(self.callbacklog)
+        # 开始线程
+        self.thread.start()
 
     def btn_switch_click(self):
         global system_running
@@ -246,10 +252,10 @@ class Ui_qds_gui(object):
             period = self.cbx_period.currentText()
             ema_slow = self.txt_ema_slow.toPlainText()
             ema_fast = self.txt_ema_fast.toPlainText()
-            one_time_offset_to_ema_slow = self.txt_one_time.toPlainText()
-            multi_times_offset_to_ema_slow = self.txt_multi_times.toPlainText()
-            stop_earning_offset_to_ema_slow = self.txt_stop_earning_offset.toPlainText()
-            stop_loss_offset_to_ema_slow = self.txt_stop_loss_offset.toPlainText()
+            open_offset = self.txt_open_offset.toPlainText()
+            open_interval = self.txt_open_interval.toPlainText()
+            stop_earning_offset = self.txt_stop_earning_offset.toPlainText()
+            stop_loss_offset = self.txt_stop_loss_offset.toPlainText()
             level_rate = self.txt_level_rate.toPlainText()
             max_number = self.txt_max_num.toPlainText()
 
@@ -270,24 +276,20 @@ class Ui_qds_gui(object):
                 self.txt_ema_slow.setFocus()
                 return
 
-            if one_time_offset_to_ema_slow and not self.is_number(one_time_offset_to_ema_slow):
-                self.txt_one_time.setText('请输入整数')
-                self.txt_one_time.setFocus()
+            if open_offset and not self.is_number(open_offset):
+                self.txt_open_offset.setText('请输入整数')
+                self.txt_open_offset.setFocus()
                 return
-            if multi_times_offset_to_ema_slow and not self.is_number(multi_times_offset_to_ema_slow):
-                self.txt_multi_times.setText('请输入整数')
-                self.txt_multi_times.setFocus()
-                return
-            if not one_time_offset_to_ema_slow and not multi_times_offset_to_ema_slow:
-                self.txt_one_time.setText('请输入整数')
-                self.txt_one_time.setFocus()
+            if open_interval and not self.is_number(open_interval):
+                self.txt_open_interval.setText('请输入整数')
+                self.txt_open_interval.setFocus()
                 return
 
-            if not self.is_number(stop_earning_offset_to_ema_slow):
+            if not self.is_number(stop_earning_offset):
                 self.txt_stop_earning_offset.setText('请输入大于0整数')
                 self.txt_stop_earning_offset.setFocus()
                 return
-            if not self.is_number(stop_loss_offset_to_ema_slow):
+            if not self.is_number(stop_loss_offset):
                 self.txt_stop_loss_offset.setText('请输入大于0整数')
                 self.txt_stop_loss_offset.setFocus()
                 return
@@ -304,14 +306,14 @@ class Ui_qds_gui(object):
             self.btn_switch.setText('停止')
             system_running = True
             self.set_all_enabled(False)
-            self.run_business_thread(True, period, ema_fast, ema_slow, multi_times_offset_to_ema_slow,
-                                     stop_earning_offset_to_ema_slow, level_rate, max_number)
-            self.run_reading_thread(True)
+            self.run_business_thread(True, period, ema_fast, ema_slow, open_offset, open_interval,
+                                     stop_earning_offset, level_rate, max_number)
+            # self.run_reading_thread(True)
         else:
             self.btn_switch.setText('开始')
             system_running = False
             self.run_business_thread(False)
-            self.run_reading_thread(False)
+            # self.run_reading_thread(False)
             self.set_all_enabled(True)
 
     def is_number(self, s):
@@ -333,17 +335,17 @@ class Ui_qds_gui(object):
         _translate = QtCore.QCoreApplication.translate
         qds_gui.setWindowTitle(_translate("qds_gui", "EMA双均线交易系统"))
         self.groupBox.setTitle(_translate("qds_gui", "参数设置"))
+        self.label_4.setText(_translate("qds_gui", "交易所"))
         self.label.setText(_translate("qds_gui", "交易品种"))
+        self.label_10.setText(_translate("qds_gui", "交易周期"))
         self.label_2.setText(_translate("qds_gui", "EMA 快线"))
         self.label_3.setText(_translate("qds_gui", "EMA 慢线"))
-        self.label_7.setText(_translate("qds_gui", "一次建仓"))
+        self.label_7.setText(_translate("qds_gui", "建仓偏移"))
+        self.label_13.setText(_translate("qds_gui", "建仓间隔"))
         self.label_8.setText(_translate("qds_gui", "止盈偏移"))
-        self.label_9.setText(_translate("qds_gui", "杠杆倍数"))
-        self.label_10.setText(_translate("qds_gui", "交易周期"))
-        self.label_12.setText(_translate("qds_gui", "最大数量"))
         self.label_11.setText(_translate("qds_gui", "止损偏移"))
-        self.label_13.setText(_translate("qds_gui", "分批建仓"))
-        self.label_4.setText(_translate("qds_gui", "交易所"))
+        self.label_9.setText(_translate("qds_gui", "杠杆倍数"))
+        self.label_12.setText(_translate("qds_gui", "最大数量"))
         self.btn_switch.setText(_translate("qds_gui", "开始"))
         self.btn_reset.setText(_translate("qds_gui", "重置"))
         self.lbl_total_cash.setText(_translate("qds_gui", "总金额: $50"))
@@ -359,8 +361,8 @@ class Ui_qds_gui(object):
         self.cbx_period.setCurrentIndex(3)
         self.txt_ema_fast.setText('7')
         self.txt_ema_slow.setText('30')
-        self.txt_one_time.setText('')
-        self.txt_multi_times.setText('30')
+        self.txt_open_offset.setText('20')
+        self.txt_open_interval.setText('0')
         self.txt_stop_earning_offset.setText('100')
         self.txt_stop_loss_offset.setText('100')
         self.txt_level_rate.setText('10')
@@ -374,8 +376,8 @@ class Ui_qds_gui(object):
         self.cbx_period.setEnabled(en)
         self.txt_ema_fast.setEnabled(en)
         self.txt_ema_slow.setEnabled(en)
-        self.txt_one_time.setEnabled(en)
-        self.txt_multi_times.setEnabled(en)
+        self.txt_open_offset.setEnabled(en)
+        self.txt_open_interval.setEnabled(en)
         self.txt_stop_earning_offset.setEnabled(en)
         self.txt_stop_loss_offset.setEnabled(en)
         self.txt_level_rate.setEnabled(en)

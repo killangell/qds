@@ -34,29 +34,6 @@ logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
 # https://docs.huobigroup.com/docs/dm/v1/cn/#8664ee712b
 URL = 'https://api.btcgateway.pro'
 
-"""
-####  input your access_key and secret_key below:
-ACCESS_KEY = '61bf2917-d263b13d-ghxertfvbf-1ebd5'
-SECRET_KEY = '8eb611d4-7daf05ac-fc2c15ff-0b1ca'
-
-dm = ReliableHuobiDM(URL, ACCESS_KEY, SECRET_KEY)
-
-# 1min, 5min, 15min, 30min, 60min,4hour,1day, 1mon
-period = '30min'
-# 杠杆倍数
-level_rate = 10
-# ma快线周期
-ma_fast = 7
-# ma慢线周期
-ma_slow = 30
-# 盈利点数
-stop_offset = 100
-# 开仓间隔
-open_offset = 30
-# 最大开仓数量
-max_open_number = 3
-"""
-
 file = 'config.xml'
 config_helper = ConfigHelper(file)
 config = ConfigData()
@@ -72,7 +49,6 @@ if register_info != config._qds_id:
     print("Error, software is not correctly registered. Please contact 313970187@qq.com to register")
     exit(-1)
 
-####  input your access_key and secret_key below:
 ACCESS_KEY = config._access_key
 SECRET_KEY = config._secret_key
 
@@ -183,10 +159,13 @@ def run():
         else:
             logging.debug("cancel_all_contract_trigger failed at trend changed")
 
-        ret = dm.get_contract_account_position_info('BTC')
-        if ru.is_ok(ret):
-            logging.debug("margin_available={0}, margin_balance={1}".format(ret['data'][0]['margin_available'],
-                                                                            ret['data'][0]['margin_balance']))
+    ret = dm.get_contract_account_position_info('BTC')
+    if ru.is_ok(ret):
+        logging.debug("margin_available={0}, margin_balance={1}".format(ret['data'][0]['margin_available'],
+                                                                        ret['data'][0]['margin_balance']))
+        if int(ret['data'][0]['margin_available']) == 0:
+            logging.debug("no available margin {0}".format(ret['data'][0]['margin_available']))
+            return False
 
     # 获取当前持仓多单数量，空单数量，价格
     ret = dm.get_contract_position_info("BTC")
@@ -412,7 +391,11 @@ run_business_enabled = False
 
 def set_buniness_enabled(enabled):
     global run_business_enabled
+    global trend_history
+
     run_business_enabled = enabled
+    if not enabled:
+        trend_history = None
 
 
 def get_business_enabled():
@@ -420,23 +403,25 @@ def get_business_enabled():
     return run_business_enabled
 
 
-def run_business(p=None, mf=None, ms=None, oo=None, so=None, lr=None, mn=None):
+def run_business(p=None, mf=None, ms=None, oo=None, oi=None, so=None, lr=None, mn=None):
     global period
     global level_rate
     global ma_fast
     global ma_slow
     global open_offset
+    global open_interval
     global stop_offset
     global max_open_number
     global run_business_enabled
 
     period = p
-    ma_fast = mf
-    ma_slow = ms
-    open_offset = oo
-    stop_offset = so
-    level_rate = lr
-    max_open_number = mn
+    ma_fast = int(mf)
+    ma_slow = int(ms)
+    open_offset = int(oo)
+    open_interval = int(oi)
+    stop_offset = int(so)
+    level_rate = int(lr)
+    max_open_number = int(mn)
 
     if run_business_enabled:
         return run()

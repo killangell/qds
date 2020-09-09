@@ -51,5 +51,6 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     ui = mywindow()
     ui.setWindowFlags(ui.windowFlags() & ~Qt.WindowMaximizeButtonHint)
+    ui.setFixedSize(ui.width(), ui.height())
     ui.show()
     sys.exit(app.exec_())
