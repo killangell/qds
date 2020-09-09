@@ -3,6 +3,6 @@
 .idea
 *.log
 .idea
-qds.spec
+*.spec
 dist
 build

@@ -1,0 +1,28 @@
+<?xml version="1.0" ?><root>
+    <account>
+        <access_key>_access_key</access_key>
+        <secret_key>_secret_key</secret_key>
+    </account>
+    <params>
+        <!--<exchange>Huobi</exchange>-->
+        <!--<category>BTC</category>-->
+        <!-- 周期: 1min, 5min, 15min, 30min, 60min,4hour,1day, 1mon -->
+        <period>_period</period>
+        <!-- EMA 快线: default is 7 -->
+        <ema_fast>_ema_fast</ema_fast>
+        <!-- EMA 慢线: default is 30, ema_slow should > ema_fast-->
+        <ema_slow>_ema_slow</ema_slow>
+        <open_offset>_open_offset</open_offset>
+        <open_interval>_open_interval</open_interval>
+        <!--<multi_times_open>30</multi_times_open>-->
+        <stop_earning_offset>_stop_earning_offset</stop_earning_offset>
+        <!--<stop_loss_offset>100</stop_loss_offset>-->
+        <!-- level_rate: 杠杆倍数 -->
+        <level_rate>_level_rate</level_rate>
+        <!-- max_open_number: 最大允许建仓数量(张)，需自己确保数量在当前杠杆倍数下有效 -->
+        <max_open_number>max_open_number</max_open_number>
+    </params>
+    <register>
+        <qds_id>qds_id</qds_id>
+    </register>
+</root>
