@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>941</width>
-    <height>770</height>
+    <width>940</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -26,9 +26,9 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>10</y>
+     <y>40</y>
      <width>401</width>
-     <height>441</height>
+     <height>381</height>
     </rect>
    </property>
    <property name="title">
@@ -38,7 +38,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>100</y>
+      <y>90</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -51,7 +51,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>90</y>
+      <y>80</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -61,7 +61,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>160</y>
+      <y>140</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -74,7 +74,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>160</y>
+      <y>140</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -87,20 +87,20 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>220</y>
+      <y>190</y>
       <width>54</width>
       <height>12</height>
      </rect>
     </property>
     <property name="text">
-     <string>一次开仓</string>
+     <string>建仓偏移</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_8">
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>280</y>
+      <y>240</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -113,7 +113,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>340</y>
+      <y>290</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -126,7 +126,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>150</y>
+      <y>130</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -139,7 +139,7 @@
     <property name="geometry">
      <rect>
       <x>300</x>
-      <y>150</y>
+      <y>130</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -148,11 +148,11 @@
      <string>30</string>
     </property>
    </widget>
-   <widget class="QTextEdit" name="txt_one_time">
+   <widget class="QTextEdit" name="txt_open_offset">
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>210</y>
+      <y>180</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -165,7 +165,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>270</y>
+      <y>230</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -178,7 +178,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>330</y>
+      <y>280</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -191,7 +191,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>100</y>
+      <y>90</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -204,7 +204,7 @@
     <property name="geometry">
      <rect>
       <x>300</x>
-      <y>90</y>
+      <y>80</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -214,7 +214,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>340</y>
+      <y>290</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -227,7 +227,7 @@
     <property name="geometry">
      <rect>
       <x>300</x>
-      <y>330</y>
+      <y>280</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -240,7 +240,7 @@
     <property name="geometry">
      <rect>
       <x>300</x>
-      <y>270</y>
+      <y>230</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -253,7 +253,7 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>280</y>
+      <y>240</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -266,20 +266,20 @@
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>220</y>
+      <y>190</y>
       <width>54</width>
       <height>12</height>
      </rect>
     </property>
     <property name="text">
-     <string>分批开仓</string>
+     <string>建仓间隔</string>
     </property>
    </widget>
-   <widget class="QTextEdit" name="txt_multi_times">
+   <widget class="QTextEdit" name="txt_open_interval">
     <property name="geometry">
      <rect>
       <x>300</x>
-      <y>210</y>
+      <y>180</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -318,7 +318,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>390</y>
+      <y>330</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -331,7 +331,7 @@
     <property name="geometry">
      <rect>
       <x>300</x>
-      <y>390</y>
+      <y>330</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -345,7 +345,7 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>20</y>
+     <y>30</y>
      <width>111</width>
      <height>41</height>
     </rect>
@@ -380,9 +380,9 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>460</y>
+     <y>430</y>
      <width>921</width>
-     <height>301</height>
+     <height>361</height>
     </rect>
    </property>
   </widget>
@@ -390,54 +390,5 @@
  <resources>
   <include location="xml.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>txt_one_time</sender>
-   <signal>textChanged()</signal>
-   <receiver>txt_multi_times</receiver>
-   <slot>clear()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>141</x>
-     <y>244</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>331</x>
-     <y>237</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>txt_multi_times</sender>
-   <signal>textChanged()</signal>
-   <receiver>txt_one_time</receiver>
-   <slot>clear()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>383</x>
-     <y>234</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>172</x>
-     <y>234</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>btn_switch</sender>
-   <signal>clicked()</signal>
-   <receiver>btn_switch</receiver>
-   <slot>click()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>215</x>
-     <y>429</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>215</x>
-     <y>429</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

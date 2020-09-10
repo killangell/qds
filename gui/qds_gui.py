@@ -12,16 +12,20 @@ import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
-from xml_rc import *
+from gui.xml_rc import *
 from qds import set_buniness_enabled, get_business_enabled, run_business
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from gui.sys_related_window import SysRelatedWindow
 
 start_point = 0
 system_running = False
 
 
 class Runthread(QtCore.QThread):
-    # python3,pyqt5与之前的版本有些不一样
-    #  通过类成员对象定义信号对象
+    # python3,pyqt5与之前的版本有些不一�?
+    #  通过类成员对象定义信号对�?
     _signal = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -45,10 +49,10 @@ class Runthread(QtCore.QThread):
         log_file = "qds.log".format(os.getcwd())
         if not os.path.exists(log_file):
             return
-        fo = open(log_file, "rb")  # 一定要用'rb'因为seek 是以bytes来计算的
+        fo = open(log_file, "rb")
         # print("文件名为: ", fo.name)
         global start_point  # 使用全局变量，让start_point 时刻保持在已经输出过的那个字节位
-        fo.seek(start_point, 1)  # 移动文件读取指针到指定位置
+        fo.seek(start_point, 1)  # 移动文件读取指针到指定位�?
         for line in fo.readlines():
             # print("读取的数据为:" + str(line.decode()))
             self._signal.emit(str(line.decode()))
@@ -58,8 +62,8 @@ class Runthread(QtCore.QThread):
 
 
 class Runthread_Business(QtCore.QThread):
-    # python3,pyqt5与之前的版本有些不一样
-    #  通过类成员对象定义信号对象
+    # python3,pyqt5与之前的版本有些不一�?
+    #  通过类成员对象定义信号对�?
     _signal = pyqtSignal(str)
 
     def __init__(self, p=None, mf=None, ms=None, oo=None, oi=None, so=None, lr=None, mn=None, parent=None):
@@ -85,7 +89,7 @@ class Runthread_Business(QtCore.QThread):
             set_buniness_enabled(True)
             if count % 60 == 0:
                 try:
-                    logging.debug("running count={0}".format(int(count/60)))
+                    logging.debug("running count={0}".format(int(count / 60)))
                     run_business(self.period, self.ma_fast, self.ma_slow, self.open_offset, self.open_interval,
                                  self.stop_offset, self.level_rate, self.max_open_number)
                 except Exception as e:
@@ -97,8 +101,6 @@ class Runthread_Business(QtCore.QThread):
         set_buniness_enabled(False)
 
 
-# 信号焕发，我是通过我封装类的回调来发起的
-
 
 class Ui_qds_gui(object):
     def run_reading_thread(self, enabled):
@@ -107,14 +109,14 @@ class Ui_qds_gui(object):
             self.thread = Runthread()
             # 连接信号
             self.thread._signal.connect(self.callbacklog)
-            # 开始线程
+            # 开始线�?
             self.thread.start()
         else:
             self.thread._signal.disconnect(self.callbacklog)
             self.thread.wait()
 
     def callbacklog(self, msg):
-        # 将回调数据输出到文本框
+        # 将回调数据输出到文本�?
         self.txt_log.appendPlainText(msg)
 
     def run_business_thread(self, enabled, period=None, ema_fast=None, ema_slow=None, open_offset=None,
@@ -122,7 +124,7 @@ class Ui_qds_gui(object):
         if enabled:
             set_buniness_enabled(True)
             self.thread2 = Runthread_Business(period, ema_fast, ema_slow, open_offset, open_interval,
-                             stop_offset, level_rate, max_number)
+                                              stop_offset, level_rate, max_number)
             self.thread2.start()
         else:
             set_buniness_enabled(False)
@@ -131,73 +133,73 @@ class Ui_qds_gui(object):
 
     def setupUi(self, qds_gui):
         qds_gui.setObjectName("qds_gui")
-        qds_gui.resize(941, 770)
+        qds_gui.resize(940, 800)
         qds_gui.setMinimumSize(QtCore.QSize(0, 0))
         qds_gui.setAutoFillBackground(True)
         self.groupBox = QtWidgets.QGroupBox(qds_gui)
-        self.groupBox.setGeometry(QtCore.QRect(10, 10, 401, 441))
+        self.groupBox.setGeometry(QtCore.QRect(10, 40, 401, 381))
         self.groupBox.setObjectName("groupBox")
         self.label = QtWidgets.QLabel(self.groupBox)
-        self.label.setGeometry(QtCore.QRect(30, 100, 54, 12))
+        self.label.setGeometry(QtCore.QRect(30, 90, 54, 12))
         self.label.setObjectName("label")
         self.cbx_category = QtWidgets.QComboBox(self.groupBox)
-        self.cbx_category.setGeometry(QtCore.QRect(100, 90, 81, 31))
+        self.cbx_category.setGeometry(QtCore.QRect(100, 80, 81, 31))
         self.cbx_category.setObjectName("cbx_category")
         self.cbx_category.addItems(['BTC'])
         self.label_2 = QtWidgets.QLabel(self.groupBox)
-        self.label_2.setGeometry(QtCore.QRect(30, 160, 54, 12))
+        self.label_2.setGeometry(QtCore.QRect(30, 140, 54, 12))
         self.label_2.setObjectName("label_2")
         self.label_3 = QtWidgets.QLabel(self.groupBox)
-        self.label_3.setGeometry(QtCore.QRect(230, 160, 54, 12))
+        self.label_3.setGeometry(QtCore.QRect(230, 140, 54, 12))
         self.label_3.setObjectName("label_3")
         self.label_7 = QtWidgets.QLabel(self.groupBox)
-        self.label_7.setGeometry(QtCore.QRect(30, 220, 54, 12))
+        self.label_7.setGeometry(QtCore.QRect(30, 190, 54, 12))
         self.label_7.setObjectName("label_7")
         self.label_8 = QtWidgets.QLabel(self.groupBox)
-        self.label_8.setGeometry(QtCore.QRect(30, 280, 54, 12))
+        self.label_8.setGeometry(QtCore.QRect(30, 240, 54, 12))
         self.label_8.setObjectName("label_8")
         self.label_9 = QtWidgets.QLabel(self.groupBox)
-        self.label_9.setGeometry(QtCore.QRect(30, 340, 54, 12))
+        self.label_9.setGeometry(QtCore.QRect(30, 290, 54, 12))
         self.label_9.setObjectName("label_9")
         self.txt_ema_fast = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_ema_fast.setGeometry(QtCore.QRect(100, 150, 81, 31))
+        self.txt_ema_fast.setGeometry(QtCore.QRect(100, 130, 81, 31))
         self.txt_ema_fast.setObjectName("txt_ema_fast")
         self.txt_ema_slow = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_ema_slow.setGeometry(QtCore.QRect(300, 150, 81, 31))
+        self.txt_ema_slow.setGeometry(QtCore.QRect(300, 130, 81, 31))
         self.txt_ema_slow.setObjectName("txt_ema_slow")
         self.txt_open_offset = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_open_offset.setGeometry(QtCore.QRect(100, 210, 81, 31))
+        self.txt_open_offset.setGeometry(QtCore.QRect(100, 180, 81, 31))
         self.txt_open_offset.setObjectName("txt_open_offset")
         self.txt_stop_earning_offset = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_stop_earning_offset.setGeometry(QtCore.QRect(100, 270, 81, 31))
+        self.txt_stop_earning_offset.setGeometry(QtCore.QRect(100, 230, 81, 31))
         self.txt_stop_earning_offset.setObjectName("txt_stop_earning_offset")
         self.txt_level_rate = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_level_rate.setGeometry(QtCore.QRect(100, 330, 81, 31))
+        self.txt_level_rate.setGeometry(QtCore.QRect(100, 280, 81, 31))
         self.txt_level_rate.setObjectName("txt_level_rate")
         self.label_10 = QtWidgets.QLabel(self.groupBox)
-        self.label_10.setGeometry(QtCore.QRect(230, 100, 54, 12))
+        self.label_10.setGeometry(QtCore.QRect(230, 90, 54, 12))
         self.label_10.setObjectName("label_10")
         self.cbx_period = QtWidgets.QComboBox(self.groupBox)
-        self.cbx_period.setGeometry(QtCore.QRect(300, 90, 81, 31))
+        self.cbx_period.setGeometry(QtCore.QRect(300, 80, 81, 31))
         self.cbx_period.setObjectName("cbx_period")
         self.cbx_period.addItems(['1min', '5min', '15min', '30min', '60min', '4hour', '1day', '1mon'])
         self.label_12 = QtWidgets.QLabel(self.groupBox)
-        self.label_12.setGeometry(QtCore.QRect(230, 340, 54, 12))
+        self.label_12.setGeometry(QtCore.QRect(230, 290, 54, 12))
         self.label_12.setObjectName("label_12")
         self.txt_max_num = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_max_num.setGeometry(QtCore.QRect(300, 330, 81, 31))
+        self.txt_max_num.setGeometry(QtCore.QRect(300, 280, 81, 31))
         self.txt_max_num.setObjectName("txt_max_num")
         self.txt_stop_loss_offset = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_stop_loss_offset.setGeometry(QtCore.QRect(300, 270, 81, 31))
+        self.txt_stop_loss_offset.setGeometry(QtCore.QRect(300, 230, 81, 31))
         self.txt_stop_loss_offset.setObjectName("txt_stop_loss_offset")
         self.label_11 = QtWidgets.QLabel(self.groupBox)
-        self.label_11.setGeometry(QtCore.QRect(230, 280, 54, 12))
+        self.label_11.setGeometry(QtCore.QRect(230, 240, 54, 12))
         self.label_11.setObjectName("label_11")
         self.label_13 = QtWidgets.QLabel(self.groupBox)
-        self.label_13.setGeometry(QtCore.QRect(230, 220, 54, 12))
+        self.label_13.setGeometry(QtCore.QRect(230, 190, 54, 12))
         self.label_13.setObjectName("label_13")
         self.txt_open_interval = QtWidgets.QTextEdit(self.groupBox)
-        self.txt_open_interval.setGeometry(QtCore.QRect(300, 210, 81, 31))
+        self.txt_open_interval.setGeometry(QtCore.QRect(300, 180, 81, 31))
         self.txt_open_interval.setObjectName("txt_open_interval")
         self.label_4 = QtWidgets.QLabel(self.groupBox)
         self.label_4.setGeometry(QtCore.QRect(30, 40, 54, 12))
@@ -207,13 +209,13 @@ class Ui_qds_gui(object):
         self.cbx_exchange.setObjectName("cbx_exchange")
         self.cbx_exchange.addItems(['Huobi'])
         self.btn_switch = QtWidgets.QPushButton(self.groupBox)
-        self.btn_switch.setGeometry(QtCore.QRect(100, 390, 81, 31))
+        self.btn_switch.setGeometry(QtCore.QRect(100, 330, 81, 31))
         self.btn_switch.setObjectName("btn_switch")
         self.btn_reset = QtWidgets.QPushButton(self.groupBox)
-        self.btn_reset.setGeometry(QtCore.QRect(300, 390, 81, 31))
+        self.btn_reset.setGeometry(QtCore.QRect(300, 330, 81, 31))
         self.btn_reset.setObjectName("btn_reset")
         self.lbl_total_cash = QtWidgets.QLabel(qds_gui)
-        self.lbl_total_cash.setGeometry(QtCore.QRect(440, 20, 111, 41))
+        self.lbl_total_cash.setGeometry(QtCore.QRect(440, 30, 111, 41))
         self.lbl_total_cash.setObjectName("lbl_total_cash")
         self.frame = QtWidgets.QFrame(qds_gui)
         self.frame.setGeometry(QtCore.QRect(430, 80, 491, 311))
@@ -223,7 +225,7 @@ class Ui_qds_gui(object):
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
         self.txt_log = QtWidgets.QPlainTextEdit(qds_gui)
-        self.txt_log.setGeometry(QtCore.QRect(10, 460, 921, 301))
+        self.txt_log.setGeometry(QtCore.QRect(10, 430, 921, 361))
         self.txt_log.setObjectName("txt_log")
         """
         self.menu_bar = QtWidgets.QMenuBar(qds_gui)
@@ -233,6 +235,31 @@ class Ui_qds_gui(object):
         self.menu_about.setObjectName("about")
         """
 
+        # 实例化主窗口的QMenuBar对象
+        bar = self.menuBar()
+        sys_menu = bar.addMenu('系统相关')
+        sys_action_params = QAction('参数说明', self)
+        sys_action_params.triggered.connect(self.params_window)
+        sys_menu.addAction(sys_action_params)
+        sys_authorize = QAction('交易授权', self)
+        sys_authorize.triggered.connect(self.authorize_window)
+        sys_menu.addAction(sys_authorize)
+        sys_action_register = QAction('软件注册', self)
+        sys_action_register.triggered.connect(self.register_window)
+        sys_menu.addAction(sys_action_register)
+
+        about_menu = bar.addMenu("软件说明")
+        about_functions = QAction("功能说明", self)
+        about_menu.addAction(about_functions)
+        about_author = QAction("关于作者", self)
+        about_author.triggered.connect(self.test)
+        about_menu.addAction(about_author)
+
+        warning_menu = bar.addMenu("交易风险")
+        warning_action = QAction("交易警告", self)
+        warning_action.triggered.connect(self.test)
+        warning_menu.addAction(warning_action)
+
         self.retranslateUi(qds_gui)
         self.btn_switch.clicked.connect(self.btn_switch_click)
         self.btn_reset.clicked.connect(self.set_default)
@@ -241,8 +268,24 @@ class Ui_qds_gui(object):
         self.thread = Runthread()
         # 连接信号
         self.thread._signal.connect(self.callbacklog)
-        # 开始线程
+        # 开始线�?
         self.thread.start()
+
+    def params_window(self):
+        print("params_window")
+        self.ui = SysRelatedWindow()
+        self.ui.setWindowFlags(self.ui.windowFlags() & ~Qt.WindowMaximizeButtonHint)
+        self.ui.setFixedSize(self.ui.width(), self.ui.height())
+        self.ui.show()
+
+    def authorize_window(self):
+        print("authorize_window")
+
+    def register_window(self):
+        print("register_window")
+
+    def test(self):
+        print("test clicked")
 
     def btn_switch_click(self):
         global system_running
@@ -286,20 +329,20 @@ class Ui_qds_gui(object):
                 return
 
             if not self.is_number(stop_earning_offset):
-                self.txt_stop_earning_offset.setText('请输入大于0整数')
+                self.txt_stop_earning_offset.setText('请输入大于0的整数')
                 self.txt_stop_earning_offset.setFocus()
                 return
             if not self.is_number(stop_loss_offset):
-                self.txt_stop_loss_offset.setText('请输入大于0整数')
+                self.txt_stop_loss_offset.setText('请输入大于0的整数')
                 self.txt_stop_loss_offset.setFocus()
                 return
 
             if not self.is_number(level_rate):
-                self.txt_level_rate.setText('请输入大于0整数')
+                self.txt_level_rate.setText('请输入大于0的整数')
                 self.txt_level_rate.setFocus()
                 return
             if not self.is_number(max_number):
-                self.max_number.setText('请输入大于0整数')
+                self.max_number.setText('请输入大于0的整数')
                 self.max_number.setFocus()
                 return
 
@@ -348,7 +391,7 @@ class Ui_qds_gui(object):
         self.label_12.setText(_translate("qds_gui", "最大数量"))
         self.btn_switch.setText(_translate("qds_gui", "开始"))
         self.btn_reset.setText(_translate("qds_gui", "重置"))
-        self.lbl_total_cash.setText(_translate("qds_gui", "总金额: $50"))
+        self.lbl_total_cash.setText(_translate("qds_gui", "总金额 $50"))
         self.set_default()
 
     def set_default(self):
@@ -384,5 +427,4 @@ class Ui_qds_gui(object):
         self.txt_max_num.setEnabled(en)
         self.btn_reset.setEnabled(en)
 
-
-import xml_rc
+# import xml_rc

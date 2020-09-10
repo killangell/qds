@@ -1,10 +1,11 @@
 import logging
 import time
 import sys
+
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt, QTimer
-from qds_gui import Ui_qds_gui
-from singleton import mysington
+from gui.qds_gui import Ui_qds_gui
+from utils.singleton import mysington
 
 logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
                     filename='qds.log',
@@ -23,10 +24,6 @@ class mywindow(QtWidgets.QMainWindow, Ui_qds_gui):
 
 
 if __name__ == "__main__":
-    if mysington._run_count == 0:
-        mysington._run_count += 1
-    else:
-        exit(-1)
 
     app = QtWidgets.QApplication(sys.argv)
     ui = mywindow()
