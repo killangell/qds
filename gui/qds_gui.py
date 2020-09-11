@@ -271,18 +271,21 @@ class Ui_qds_gui(object):
         # 开始线�?
         self.thread.start()
 
-    def params_window(self):
-        print("params_window")
+    def pop_sys_related_window(self, page_index=0):
         self.ui = SysRelatedWindow()
         self.ui.setWindowFlags(self.ui.windowFlags() & ~Qt.WindowMaximizeButtonHint)
         self.ui.setFixedSize(self.ui.width(), self.ui.height())
+        self.ui.tab_sys_related.setCurrentIndex(page_index)
         self.ui.show()
 
+    def params_window(self):
+        self.pop_sys_related_window(0)
+
     def authorize_window(self):
-        print("authorize_window")
+        self.pop_sys_related_window(1)
 
     def register_window(self):
-        print("register_window")
+        self.pop_sys_related_window(2)
 
     def test(self):
         print("test clicked")

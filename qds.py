@@ -57,11 +57,11 @@ dm = ReliableHuobiDM(URL, ACCESS_KEY, SECRET_KEY)
 # 1min, 5min, 15min, 30min, 60min,4hour,1day, 1mon
 period = config._period
 # ma快线周期
-ma_fast = int(config._ma_fast)
+ma_fast = int(config._ema_fast)
 # ma慢线周期
-ma_slow = int(config._ma_slow)
+ma_slow = int(config._ema_slow)
 # 盈利点数
-stop_offset = int(config._stop_offset)
+stop_offset = int(config._stop_earning_offset)
 # 开仓距离ma_slow的点位数，如果要在ma_slow处建仓应该设置为0
 open_offset = int(config._open_offset)
 # 分批建仓间隔点位数，如果要一次建仓，应该设置为0
@@ -85,6 +85,19 @@ def debug_ema(org_data=Organized()):
             print("ema[{0}]={1} == ema[{2}]={3}".format(ma_fast, ema_fast, ma_slow, ema_slow))
     print("totally {0}".format(count))
 
+
+def cancell_all_contract():
+    ret = dm.cancel_all_contract_order("BTC")
+    if ru.is_ok(ret):
+        logging.debug("cancel_all_contract_order successfully")
+    else:
+        logging.debug("cancel_all_contract_order failed")
+
+    ret = dm.cancel_all_contract_trigger("BTC")
+    if ru.is_ok(ret):
+        logging.debug("cancel_all_contract_trigger successfully")
+    else:
+        logging.debug("cancel_all_contract_trigger failed")
 
 # holding 持仓， pending 挂单
 def run():

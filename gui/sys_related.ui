@@ -16,7 +16,7 @@
   <property name="windowTitle">
    <string>系统相关</string>
   </property>
-  <widget class="QTabWidget" name="tabWidget">
+  <widget class="QTabWidget" name="tab_sys_related">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -26,7 +26,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="tab_params">
     <attribute name="title">
@@ -109,6 +109,19 @@
         </rect>
        </property>
       </widget>
+      <widget class="QPushButton" name="btn_authorize">
+       <property name="geometry">
+        <rect>
+         <x>110</x>
+         <y>150</y>
+         <width>121</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>确认</string>
+       </property>
+      </widget>
      </widget>
      <widget class="QWidget" name="tab_okex">
       <attribute name="title">
@@ -155,6 +168,42 @@
      </property>
      <property name="text">
       <string>提交注册</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_save_registration_info">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>220</y>
+       <width>121</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>保存注册信息</string>
+     </property>
+    </widget>
+    <widget class="QTextEdit" name="txt_registration_info">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>170</y>
+       <width>291</width>
+       <height>31</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_4">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>20</y>
+       <width>401</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>第一步:提交注册，第二步:等待作者返回注册信息，第三步:保存注册信息</string>
      </property>
     </widget>
    </widget>
