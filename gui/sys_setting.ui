@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>obj_sys_related</class>
- <widget class="QDialog" name="obj_sys_related">
+ <class>obj_sys_setting</class>
+ <widget class="QDialog" name="obj_sys_setting">
   <property name="windowModality">
    <enum>Qt::WindowModal</enum>
   </property>
@@ -14,9 +14,9 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>系统相关</string>
+   <string>系统设置</string>
   </property>
-  <widget class="QTabWidget" name="tab_sys_related">
+  <widget class="QTabWidget" name="tab_sys_setting">
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -26,23 +26,8 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
-   <widget class="QWidget" name="tab_params">
-    <attribute name="title">
-     <string>参数说明</string>
-    </attribute>
-    <widget class="QTextEdit" name="textEdit">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>441</width>
-       <height>281</height>
-      </rect>
-     </property>
-    </widget>
-   </widget>
    <widget class="QWidget" name="tab_authorize">
     <attribute name="title">
      <string>交易授权</string>
@@ -119,7 +104,20 @@
         </rect>
        </property>
        <property name="text">
-        <string>确认</string>
+        <string>确认授权</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btn_authorize_test">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>150</y>
+         <width>121</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>测试授权</string>
        </property>
       </widget>
      </widget>
@@ -204,6 +202,19 @@
      </property>
      <property name="text">
       <string>第一步:提交注册，第二步:等待作者返回注册信息，第三步:保存注册信息</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_registration_info_test">
+     <property name="geometry">
+      <rect>
+       <x>280</x>
+       <y>220</y>
+       <width>121</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>测试是否注册</string>
      </property>
     </widget>
    </widget>

@@ -34,6 +34,7 @@ logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
 # https://docs.huobigroup.com/docs/dm/v1/cn/#8664ee712b
 URL = 'https://api.btcgateway.pro'
 
+
 file = 'config.xml'
 config_helper = ConfigHelper(file)
 config = ConfigData()
@@ -43,11 +44,12 @@ if ret:
 else:
     print("Error, please check file {0}".format(file))
     exit(-1)
-
+"""
 register_info = Register.get_register_info()
 if register_info != config._qds_id:
     print("Error, software is not correctly registered. Please contact 313970187@qq.com to register")
     exit(-1)
+"""
 
 ACCESS_KEY = config._access_key
 SECRET_KEY = config._secret_key
@@ -73,6 +75,25 @@ max_open_number = int(config._max_open_number)
 
 # 行情历史
 trend_history = None
+
+
+def qds_test_registration():
+    register_info = Register.get_register_info()
+    if register_info != config._qds_id:
+        logging.debug("qds_test_registration failed")
+        return False
+    logging.debug("qds_test_registration ok")
+    return True
+
+
+def qds_test_authorize():
+    ret = dm.get_contract_account_position_info('BTC')
+    if not ru.is_ok(ret):
+        logging.debug("qds_test_authorize failed")
+        return False
+    else:
+        logging.debug("qds_test_authorize ok")
+        return True
 
 
 def debug_ema(org_data=Organized()):
@@ -108,6 +129,11 @@ def run():
     * 如果没有顺势持仓，则（如果没有限价挂单，则按最优价格挂单；如果有限价挂单，检查价位是否合理，如果不合理则撤销重新挂单）
     * 如果有顺势持仓，则只挂止盈委托挂单，在慢速ema价格上设置止盈点
     """
+    ret = qds_test_registration()
+    if not ret:
+        logging.debug("Error, software is not correctly registered. Please contact 313970187@qq.com to register")
+        return False
+
     global period
     global ma_fast
     global ma_slow

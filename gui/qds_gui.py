@@ -12,12 +12,14 @@ import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
+
+from gui.sw_doc_window import SWDOCWindow
 from gui.xml_rc import *
 from qds import set_buniness_enabled, get_business_enabled, run_business
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from gui.sys_related_window import SysRelatedWindow
+from gui.sys_setting_window import SysSettingWindow
 
 start_point = 0
 system_running = False
@@ -192,6 +194,7 @@ class Ui_qds_gui(object):
         self.txt_stop_loss_offset = QtWidgets.QTextEdit(self.groupBox)
         self.txt_stop_loss_offset.setGeometry(QtCore.QRect(300, 230, 81, 31))
         self.txt_stop_loss_offset.setObjectName("txt_stop_loss_offset")
+        self.txt_stop_loss_offset.setEnabled(False)
         self.label_11 = QtWidgets.QLabel(self.groupBox)
         self.label_11.setGeometry(QtCore.QRect(230, 240, 54, 12))
         self.label_11.setObjectName("label_11")
@@ -237,10 +240,7 @@ class Ui_qds_gui(object):
 
         # 实例化主窗口的QMenuBar对象
         bar = self.menuBar()
-        sys_menu = bar.addMenu('系统相关')
-        sys_action_params = QAction('参数说明', self)
-        sys_action_params.triggered.connect(self.params_window)
-        sys_menu.addAction(sys_action_params)
+        sys_menu = bar.addMenu('系统设置')
         sys_authorize = QAction('交易授权', self)
         sys_authorize.triggered.connect(self.authorize_window)
         sys_menu.addAction(sys_authorize)
@@ -248,12 +248,16 @@ class Ui_qds_gui(object):
         sys_action_register.triggered.connect(self.register_window)
         sys_menu.addAction(sys_action_register)
 
-        about_menu = bar.addMenu("软件说明")
-        about_functions = QAction("功能说明", self)
-        about_menu.addAction(about_functions)
-        about_author = QAction("关于作者", self)
-        about_author.triggered.connect(self.test)
-        about_menu.addAction(about_author)
+        sw_doc_menu = bar.addMenu("软件说明")
+        param_doc = QAction('参数说明', self)
+        param_doc.triggered.connect(self.params_window)
+        sw_doc_menu.addAction(param_doc)
+        func_doc = QAction("功能说明", self)
+        func_doc.triggered.connect(self.func_window)
+        sw_doc_menu.addAction(func_doc)
+        author_doc = QAction("关于作者", self)
+        author_doc.triggered.connect(self.author_window)
+        sw_doc_menu.addAction(author_doc)
 
         warning_menu = bar.addMenu("交易风险")
         warning_action = QAction("交易警告", self)
@@ -268,24 +272,37 @@ class Ui_qds_gui(object):
         self.thread = Runthread()
         # 连接信号
         self.thread._signal.connect(self.callbacklog)
-        # 开始线�?
+        # 开始线程
         self.thread.start()
 
-    def pop_sys_related_window(self, page_index=0):
-        self.ui = SysRelatedWindow()
+    def pop_sys_setting_window(self, page_index=0):
+        self.ui = SysSettingWindow()
         self.ui.setWindowFlags(self.ui.windowFlags() & ~Qt.WindowMaximizeButtonHint)
         self.ui.setFixedSize(self.ui.width(), self.ui.height())
-        self.ui.tab_sys_related.setCurrentIndex(page_index)
+        self.ui.tab_sys_setting.setCurrentIndex(page_index)
+        self.ui.show()
+
+    def authorize_window(self):
+        self.pop_sys_setting_window(0)
+
+    def register_window(self):
+        self.pop_sys_setting_window(1)
+
+    def pop_sw_doc_window(self, page_index=0):
+        self.ui = SWDOCWindow()
+        self.ui.setWindowFlags(self.ui.windowFlags() & ~Qt.WindowMaximizeButtonHint)
+        self.ui.setFixedSize(self.ui.width(), self.ui.height())
+        self.ui.tab_sw_doc.setCurrentIndex(page_index)
         self.ui.show()
 
     def params_window(self):
-        self.pop_sys_related_window(0)
+        self.pop_sw_doc_window(0)
 
-    def authorize_window(self):
-        self.pop_sys_related_window(1)
+    def func_window(self):
+        self.pop_sw_doc_window(1)
 
-    def register_window(self):
-        self.pop_sys_related_window(2)
+    def author_window(self):
+        self.pop_sw_doc_window(2)
 
     def test(self):
         print("test clicked")
@@ -410,7 +427,7 @@ class Ui_qds_gui(object):
         self.txt_open_offset.setText('20')
         self.txt_open_interval.setText('0')
         self.txt_stop_earning_offset.setText('100')
-        self.txt_stop_loss_offset.setText('100')
+        self.txt_stop_loss_offset.setText('0')
         self.txt_level_rate.setText('10')
         self.txt_max_num.setText('3')
         self.btn_switch.setText('开始')
@@ -425,7 +442,7 @@ class Ui_qds_gui(object):
         self.txt_open_offset.setEnabled(en)
         self.txt_open_interval.setEnabled(en)
         self.txt_stop_earning_offset.setEnabled(en)
-        self.txt_stop_loss_offset.setEnabled(en)
+        self.txt_stop_loss_offset.setEnabled(False)
         self.txt_level_rate.setEnabled(en)
         self.txt_max_num.setEnabled(en)
         self.btn_reset.setEnabled(en)
