@@ -13,6 +13,7 @@ import time
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
 
+from gui.risk_window import RiskWindow
 from gui.sw_doc_window import SWDOCWindow
 from gui.xml_rc import *
 from qds import set_buniness_enabled, get_business_enabled, run_business
@@ -230,13 +231,6 @@ class Ui_qds_gui(object):
         self.txt_log = QtWidgets.QPlainTextEdit(qds_gui)
         self.txt_log.setGeometry(QtCore.QRect(10, 430, 921, 361))
         self.txt_log.setObjectName("txt_log")
-        """
-        self.menu_bar = QtWidgets.QMenuBar(qds_gui)
-        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 637, 22))
-        self.menu_bar.setObjectName("menuBar")
-        self.menu_about = QtWidgets.QMenu(self.menu_bar)
-        self.menu_about.setObjectName("about")
-        """
 
         # 实例化主窗口的QMenuBar对象
         bar = self.menuBar()
@@ -249,20 +243,20 @@ class Ui_qds_gui(object):
         sys_menu.addAction(sys_action_register)
 
         sw_doc_menu = bar.addMenu("软件说明")
-        param_doc = QAction('参数说明', self)
-        param_doc.triggered.connect(self.params_window)
-        sw_doc_menu.addAction(param_doc)
         func_doc = QAction("功能说明", self)
         func_doc.triggered.connect(self.func_window)
         sw_doc_menu.addAction(func_doc)
+        param_doc = QAction('参数说明', self)
+        param_doc.triggered.connect(self.params_window)
+        sw_doc_menu.addAction(param_doc)
         author_doc = QAction("关于作者", self)
         author_doc.triggered.connect(self.author_window)
         sw_doc_menu.addAction(author_doc)
 
-        warning_menu = bar.addMenu("交易风险")
+        risk_menu = bar.addMenu("交易风险")
         warning_action = QAction("交易警告", self)
-        warning_action.triggered.connect(self.test)
-        warning_menu.addAction(warning_action)
+        warning_action.triggered.connect(self.risk)
+        risk_menu.addAction(warning_action)
 
         self.retranslateUi(qds_gui)
         self.btn_switch.clicked.connect(self.btn_switch_click)
@@ -274,6 +268,8 @@ class Ui_qds_gui(object):
         self.thread._signal.connect(self.callbacklog)
         # 开始线程
         self.thread.start()
+
+        self.pop_risk_window()
 
     def pop_sys_setting_window(self, page_index=0):
         self.ui = SysSettingWindow()
@@ -295,17 +291,23 @@ class Ui_qds_gui(object):
         self.ui.tab_sw_doc.setCurrentIndex(page_index)
         self.ui.show()
 
-    def params_window(self):
+    def func_window(self):
         self.pop_sw_doc_window(0)
 
-    def func_window(self):
+    def params_window(self):
         self.pop_sw_doc_window(1)
 
     def author_window(self):
         self.pop_sw_doc_window(2)
 
-    def test(self):
-        print("test clicked")
+    def pop_risk_window(self):
+        self.ui = RiskWindow()
+        self.ui.setWindowFlags(self.ui.windowFlags() & ~Qt.WindowMaximizeButtonHint)
+        self.ui.setFixedSize(self.ui.width(), self.ui.height())
+        self.ui.show()
+
+    def risk(self):
+        self.pop_risk_window()
 
     def btn_switch_click(self):
         global system_running
@@ -396,7 +398,7 @@ class Ui_qds_gui(object):
 
     def retranslateUi(self, qds_gui):
         _translate = QtCore.QCoreApplication.translate
-        qds_gui.setWindowTitle(_translate("qds_gui", "EMA双均线交易系统"))
+        qds_gui.setWindowTitle(_translate("qds_gui", "EMA双均线交易辅助系统"))
         self.groupBox.setTitle(_translate("qds_gui", "参数设置"))
         self.label_4.setText(_translate("qds_gui", "交易所"))
         self.label.setText(_translate("qds_gui", "交易品种"))

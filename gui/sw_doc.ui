@@ -26,13 +26,13 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
-   <widget class="QWidget" name="tab_params_doc">
+   <widget class="QWidget" name="tab_func_doc">
     <attribute name="title">
-     <string>参数说明</string>
+     <string>功能说明</string>
     </attribute>
-    <widget class="QPlainTextEdit" name="txt_sw_doc">
+    <widget class="QPlainTextEdit" name="txt_func_doc">
      <property name="geometry">
       <rect>
        <x>0</x>
@@ -43,11 +43,11 @@
      </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="tab_func_doc">
+   <widget class="QWidget" name="tab_params_doc">
     <attribute name="title">
-     <string>功能说明</string>
+     <string>参数说明</string>
     </attribute>
-    <widget class="QPlainTextEdit" name="txt_func_doc">
+    <widget class="QPlainTextEdit" name="txt_sw_doc">
      <property name="geometry">
       <rect>
        <x>0</x>
