@@ -22,9 +22,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from gui.sys_setting_window import SysSettingWindow
 from utils.config_helper import ConfigHelper, ConfigData
-from global_data.system import set_system_running, get_system_running
+from global_data.system import set_system_running, get_system_running, get_margin
 
 start_point = 0
+lbl_cash = None
 
 class Runthread(QtCore.QThread):
     # python3,pyqt5与之前的版本有些不一�?
@@ -42,6 +43,9 @@ class Runthread(QtCore.QThread):
         while True:
             # self._signal.emit('hello');  # 可以在这里写信号焕发
             self.read_logs()
+            margin = get_margin()
+            if lbl_cash:
+                lbl_cash.setText("BTC: {0}".format(margin))
             time.sleep(1)
         # logging.debug("stop reading logs")
 
@@ -219,7 +223,7 @@ class Ui_qds_gui(object):
         self.btn_reset.setGeometry(QtCore.QRect(300, 330, 81, 31))
         self.btn_reset.setObjectName("btn_reset")
         self.lbl_total_cash = QtWidgets.QLabel(qds_gui)
-        self.lbl_total_cash.setGeometry(QtCore.QRect(440, 30, 111, 41))
+        self.lbl_total_cash.setGeometry(QtCore.QRect(440, 30, 200, 41))
         self.lbl_total_cash.setObjectName("lbl_total_cash")
         self.frame = QtWidgets.QFrame(qds_gui)
         self.frame.setGeometry(QtCore.QRect(430, 80, 491, 311))
@@ -278,6 +282,9 @@ class Ui_qds_gui(object):
         self.thread.start()
         self.get_params()
         self.pop_risk_window()
+
+        global lbl_cash
+        lbl_cash = self.lbl_total_cash
 
     def cancell_all_contract(self):
         if get_system_running():
