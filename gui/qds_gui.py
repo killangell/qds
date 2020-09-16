@@ -22,10 +22,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from gui.sys_setting_window import SysSettingWindow
 from utils.config_helper import ConfigHelper, ConfigData
+from global_data.system import set_system_running, get_system_running
 
 start_point = 0
-system_running = False
-
 
 class Runthread(QtCore.QThread):
     # python3,pyqt5与之前的版本有些不一�?
@@ -89,7 +88,7 @@ class Runthread_Business(QtCore.QThread):
     def run(self):
         # self._signal.emit('hello');  # 可以在这里写信号焕发
         count = 0
-        while system_running:
+        while get_system_running():
             set_buniness_enabled(True)
             if count % 60 == 0:
                 try:
@@ -281,13 +280,13 @@ class Ui_qds_gui(object):
         self.pop_risk_window()
 
     def cancell_all_contract(self):
-        if system_running:
+        if get_system_running():
             QMessageBox.information(self, '提示', '该功能只能在停止运行后使用')
         else:
             cancell_all_contract()
 
     def close_all_contract(self):
-        if system_running:
+        if get_system_running():
             QMessageBox.information(self, '提示', '该功能只能在停止运行后使用')
         else:
             close_all_contract()
@@ -379,8 +378,7 @@ class Ui_qds_gui(object):
         self.pop_risk_window()
 
     def btn_switch_click(self):
-        global system_running
-        if not system_running:
+        if not get_system_running():
             exchange = self.cbx_exchange.currentText()
             category = self.cbx_category.currentText()
             period = self.cbx_period.currentText()
@@ -438,14 +436,14 @@ class Ui_qds_gui(object):
                 return
 
             self.btn_switch.setText('停止')
-            system_running = True
+            set_system_running(True)
             self.set_all_enabled(False)
             self.run_business_thread(True, period, ema_fast, ema_slow, open_offset, open_interval,
                                      stop_earning_offset, level_rate, max_number)
             self.set_params()
         else:
             self.btn_switch.setText('开始')
-            system_running = False
+            set_system_running(False)
             self.run_business_thread(False)
             # self.run_reading_thread(False)
             self.set_all_enabled(True)
@@ -486,8 +484,7 @@ class Ui_qds_gui(object):
         self.set_default()
 
     def set_default(self):
-        global system_running
-        if system_running:
+        if get_system_running():
             return
 
         self.cbx_exchange.setCurrentIndex(0)

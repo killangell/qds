@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from pprint import pprint
 from data_source.huobi.static_data_source.huobi_4hour_data_source import Huobi4HourData
 from data_source.kline_adapter_huobi import KLineAdapterHuobi
+from global_data.system import set_system_running, get_system_running, set_margin
 from model.ma_table import MaTable
 from model.organized import Organized
 from control.strategy1 import Strategy1
@@ -21,7 +22,6 @@ from data_source.huobi.helpers.contract_openorders_helper import ContractOpenOrd
 from data_source.huobi.helpers.contract_trigger_openorders_helper import ContractTriggerOpenOrdersHelper as ctoo_helper
 from utils.config_helper import ConfigHelper, ConfigData
 from utils.register import Register
-
 
 logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
                     filename='qds.log',
@@ -45,12 +45,6 @@ if ret:
 else:
     logging.debug("Error, please check file {0}".format(file))
     sys.exit(-1)
-"""
-register_info = Register.get_register_info()
-if register_info != config._qds_id:
-    print("Error, software is not correctly registered. Please contact 313970187@qq.com to register")
-    exit(-1)
-"""
 
 ACCESS_KEY = config._access_key
 SECRET_KEY = config._secret_key
@@ -180,6 +174,8 @@ def run():
     logging.debug("qds params: period={0}, ma_fast={1}, ma_slow={2}, open_offset={3}, open_interval={4}, "
                   "stop_offset={5}, level_rate={6}, max_open_number={7}".format(
         period, ma_fast, ma_slow, open_offset, open_interval, stop_offset, level_rate, max_open_number))
+
+    if not get_system_running(): return False
     ret = dm.get_contract_kline(symbol='BTC_NQ', period=period, size=100)
     if not ru.is_ok(ret):
         logging.debug("get_contract_kline failed")
@@ -219,27 +215,33 @@ def run():
         logging.debug(
             "trend={5} last: {4} ma{0}:{1}, ma{2}:{3}".format(ma_fast, last_ema_fast, ma_slow, last_ema_slow, ts,
                                                               trend))
+        if not get_system_running(): return False
         ret = dm.cancel_all_contract_order("BTC")
         if ru.is_ok(ret):
             logging.debug("cancel_all_contract_order successfully at trend changed")
         else:
             logging.debug("cancel_all_contract_order failed at trend changed")
 
+        if not get_system_running(): return False
         ret = dm.cancel_all_contract_trigger("BTC")
         if ru.is_ok(ret):
             logging.debug("cancel_all_contract_trigger successfully at trend changed")
         else:
             logging.debug("cancel_all_contract_trigger failed at trend changed")
 
+    if not get_system_running(): return False
     ret = dm.get_contract_account_position_info('BTC')
     if ru.is_ok(ret):
         logging.debug("margin_available={0}, margin_balance={1}".format(ret['data'][0]['margin_available'],
                                                                         ret['data'][0]['margin_balance']))
-        if ret['data'][0]['margin_available'] == 0:
+        margin = ret['data'][0]['margin_available']
+        set_margin(margin)
+        if margin == 0:
             logging.debug("no available margin {0}".format(ret['data'][0]['margin_available']))
             return False
 
     # 获取当前持仓多单数量，空单数量，价格
+    if not get_system_running(): return False
     ret = dm.get_contract_position_info("BTC")
     if not ru.is_ok(ret):
         logging.debug("get_contract_position_info failed")
@@ -252,6 +254,7 @@ def run():
     limit_holding_sell_price = cpi_helper.get_price('sell', ret)
 
     # 获取当前限价挂单的方向以及价格
+    if not get_system_running(): return False
     ret = dm.get_contract_open_orders("BTC")
     if not ru.is_ok(ret):
         logging.debug("get_contract_open_orders failed")
@@ -266,6 +269,7 @@ def run():
     limit_pending_sell_price_list = coo_helper.get_price('sell', 'open', ret)
 
     # 获取当前委托挂单多单数量，空单数量
+    if not get_system_running(): return False
     ret = dm.get_contract_trigger_openorders("BTC")
     if not ru.is_ok(ret):
         logging.debug("get_contract_trigger_openorders failed")
@@ -349,6 +353,7 @@ def run():
     # 平掉所有逆势持仓
     if limit_holding_against_trend_count > 0:
         logging.debug("limit_holding_against_trend_count={0}".format(limit_holding_against_trend_count))
+        if not get_system_running(): return False
         ret = dm.send_lightning_close_position("BTC", "next_quarter", '',
                                                round(limit_holding_against_trend_count),
                                                limit_holding_against_trend_close_direction,
@@ -364,6 +369,7 @@ def run():
     # 撤销所有逆势限价挂单，简化操作，只要逆势挂单就撤销所有限价挂单
     if limit_pending_against_trend_count > 0:
         logging.debug("limit_pending_against_trend_count={0}".format(limit_pending_against_trend_count))
+        if not get_system_running(): return False
         ret = dm.cancel_all_contract_order("BTC")
         if ru.is_ok(ret):
             limit_pending_on_trend_count = 0
@@ -392,6 +398,7 @@ def run():
                             volume = available_limit_pending_on_trend_count
                         direction = limit_pending_on_trend_open_direction
                         if price > 0 and volume > 0:
+                            if not get_system_running(): return False
                             ret = dm.send_contract_order(symbol='BTC', contract_type='next_quarter', contract_code='',
                                                          client_order_id='', price=price, volume=int(volume),
                                                          direction=direction, offset='open', lever_rate=level_rate,
@@ -405,6 +412,7 @@ def run():
                                 logging.debug("send_contract_order failed")
                                 return False
         elif limit_pending_on_trend_count != max_on_trend_count:
+            if not get_system_running(): return False
             ret = dm.cancel_all_contract_order('BTC')
             if ru.is_ok(ret):
                 logging.debug(
@@ -423,6 +431,7 @@ def run():
                     if price == limit_best_price[j]:
                         is_best_limit_price = True
                 if not is_best_limit_price:
+                    if not get_system_running(): return False
                     ret = dm.cancel_all_contract_order('BTC')
                     if ru.is_ok(ret):
                         logging.debug(
@@ -439,6 +448,7 @@ def run():
                                                limit_pending_close_on_trend_count - trigger_holding_on_trend_count
     if available_trigger_pending_on_trend_count > 0:
         logging.debug("available_trigger_pending_on_trend_count={0}".format(available_trigger_pending_on_trend_count))
+        if not get_system_running(): return False
         ret = dm.send_contract_trigger_order(symbol='BTC', contract_type='next_quarter',
                                              contract_code=None,
                                              trigger_type=stop_earning_trigger_type,
@@ -503,7 +513,7 @@ if __name__ == "__main__":
     run_count = 0
 
     while True:
-        logging.debug("\n\nrun_count={0}".format(run_count))
+        logging.debug("run_count={0}".format(run_count))
 
         try:
             run()
