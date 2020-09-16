@@ -16,11 +16,12 @@ from PyQt5.QtCore import pyqtSignal
 from gui.risk_window import RiskWindow
 from gui.sw_doc_window import SWDOCWindow
 from gui.xml_rc import *
-from qds import set_buniness_enabled, get_business_enabled, run_business
+from qds import set_buniness_enabled, get_business_enabled, run_business, cancell_all_contract, close_all_contract
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from gui.sys_setting_window import SysSettingWindow
+from utils.config_helper import ConfigHelper, ConfigData
 
 start_point = 0
 system_running = False
@@ -242,6 +243,14 @@ class Ui_qds_gui(object):
         sys_action_register.triggered.connect(self.register_window)
         sys_menu.addAction(sys_action_register)
 
+        trade_menu = bar.addMenu('交易操作')
+        trade_call_all_contract = QAction('撤销所有挂单', self)
+        trade_call_all_contract.triggered.connect(self.cancell_all_contract)
+        trade_menu.addAction(trade_call_all_contract)
+        trade_close_all_contract = QAction('平仓所有持仓', self)
+        trade_close_all_contract.triggered.connect(self.close_all_contract)
+        trade_menu.addAction(trade_close_all_contract)
+
         sw_doc_menu = bar.addMenu("软件说明")
         func_doc = QAction("功能说明", self)
         func_doc.triggered.connect(self.func_window)
@@ -268,8 +277,68 @@ class Ui_qds_gui(object):
         self.thread._signal.connect(self.callbacklog)
         # 开始线程
         self.thread.start()
-
+        self.get_params()
         self.pop_risk_window()
+
+    def cancell_all_contract(self):
+        if system_running:
+            QMessageBox.information(self, '提示', '该功能只能在停止运行后使用')
+        else:
+            cancell_all_contract()
+
+    def close_all_contract(self):
+        if system_running:
+            QMessageBox.information(self, '提示', '该功能只能在停止运行后使用')
+        else:
+            close_all_contract()
+
+    def get_params(self):
+        file = 'config.xml'
+        config_helper = ConfigHelper(file)
+        config = ConfigData()
+        ret = config_helper.init_root()
+        if ret:
+            config_helper.parse(config)
+            self.cbx_period.setCurrentText(config._period)
+            self.txt_ema_fast.setText(config._ema_fast)
+            self.txt_ema_slow.setText(config._ema_slow)
+            self.txt_open_offset.setText(config._open_offset)
+            self.txt_open_interval.setText(config._open_interval)
+            self.txt_stop_earning_offset.setText(config._stop_earning_offset)
+            self.txt_stop_loss_offset.setText("0")
+            self.txt_level_rate.setText(config._level_rate)
+            self.txt_max_num.setText(config._max_open_number)
+        else:
+            QMessageBox.information(self, '提示', '配置文件config.xml出错')
+
+    def set_params(self):
+        period = self.cbx_period.currentText().strip()
+        ema_fast = self.txt_ema_fast.toPlainText().strip()
+        ema_slow = self.txt_ema_slow.toPlainText().strip()
+        open_offset = self.txt_open_offset.toPlainText().strip()
+        open_interval = self.txt_open_interval.toPlainText().strip()
+        stop_earning_offset = self.txt_stop_earning_offset.toPlainText().strip()
+        stop_loss_offset = self.txt_stop_loss_offset.toPlainText().strip()
+        level_rate = self.txt_level_rate.toPlainText().strip()
+        max_number = self.txt_max_num.toPlainText().strip()
+
+        file = 'config.xml'
+        config_helper = ConfigHelper(file)
+        config_to_save = ConfigData()
+        ret = config_helper.init_root()
+        if ret:
+            config_helper.parse(config_to_save)
+            config_to_save._period = period
+            config_to_save._ema_fast = ema_fast
+            config_to_save._ema_slow = ema_slow
+            config_to_save._open_offset = open_offset
+            config_to_save._open_interval = open_interval
+            config_to_save._stop_earning_offset = stop_earning_offset
+            config_to_save._level_rate = level_rate
+            config_to_save._max_open_number = max_number
+            config_helper.save(config_to_save)
+        else:
+            QMessageBox.information(self, '提示', '配置文件config.xml出错')
 
     def pop_sys_setting_window(self, page_index=0):
         self.ui = SysSettingWindow()
@@ -373,7 +442,7 @@ class Ui_qds_gui(object):
             self.set_all_enabled(False)
             self.run_business_thread(True, period, ema_fast, ema_slow, open_offset, open_interval,
                                      stop_earning_offset, level_rate, max_number)
-            # self.run_reading_thread(True)
+            self.set_params()
         else:
             self.btn_switch.setText('开始')
             system_running = False

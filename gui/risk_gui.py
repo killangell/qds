@@ -25,7 +25,7 @@ class Ui_obj_risk(object):
     def retranslateUi(self, obj_risk):
         _translate = QtCore.QCoreApplication.translate
         obj_risk.setWindowTitle(_translate("obj_risk", "交易警告"))
-        self.txt_risk.setPlainText("1. 该系统为一种以EMA金叉死叉为依据的辅助交易系统，并不提供具体交易策略，盈亏自负。\n"
-                                    "2. 系统依赖第三方交易机构的的API接口，所以在网络连接不畅，或者网络中断，以及第三方交易机构服务异常的情况下，会出现挂单/平仓失败的情况，盈亏自负。\n"
+        self.txt_risk.setPlainText("1. 该系统为一种以EMA金叉死叉为依据的辅助交易系统，并不提供具体交易策略，盈亏自负。\n\n"
+                                    "2. 系统依赖第三方交易机构的的API接口，所以在网络连接不畅，或者网络中断，以及第三方交易机构服务异常的情况下，会出现挂单/平仓失败的情况，盈亏自负。\n\n"
                                     "3. 软件本身可能有逻辑或者功能问题，也可能导致挂单/平仓出现问题，切忌重仓操作，盈亏自负。"
                                    )

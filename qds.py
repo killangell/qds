@@ -1,4 +1,5 @@
 import logging
+import sys
 import time
 
 import talib
@@ -42,8 +43,8 @@ ret = config_helper.init_root()
 if ret:
     config_helper.parse(config)
 else:
-    print("Error, please check file {0}".format(file))
-    exit(-1)
+    logging.debug("Error, please check file {0}".format(file))
+    sys.exit(-1)
 """
 register_info = Register.get_register_info()
 if register_info != config._qds_id:
@@ -119,6 +120,38 @@ def cancell_all_contract():
         logging.debug("cancel_all_contract_trigger successfully")
     else:
         logging.debug("cancel_all_contract_trigger failed")
+
+
+def close_all_contract():
+    ret = dm.get_contract_position_info("BTC")
+    if not ru.is_ok(ret):
+        logging.debug("close_all_contract get_contract_position_info failed")
+        return False
+    buy_count = int(cpi_helper.get_orders_count('buy', ret))
+    sell_count = int(cpi_helper.get_orders_count('sell', ret))
+
+    if buy_count > 0:
+        ret = dm.send_lightning_close_position("BTC", "next_quarter", '',
+                                               buy_count,
+                                               "sell",
+                                               '', None)
+        if ru.is_ok(ret):
+            logging.debug("close_all_contract send_lightning_close_position successfully, direction={0}, volume={1}".format(
+                "sell", buy_count))
+        else:
+            logging.debug("close_all_contract send_lightning_close_position failed, direction={0}, volume={1}".format(
+                "sell", buy_count))
+    if sell_count > 0:
+        ret = dm.send_lightning_close_position("BTC", "next_quarter", '',
+                                               sell_count,
+                                               "buy",
+                                               '', None)
+        if ru.is_ok(ret):
+            logging.debug("close_all_contract send_lightning_close_position successfully, direction={0}, volume={1}".format(
+                "buy", sell_count))
+        else:
+            logging.debug("close_all_contract send_lightning_close_position failed, direction={0}, volume={1}".format(
+                "buy", sell_count))
 
 # holding 持仓， pending 挂单
 def run():
@@ -202,7 +235,7 @@ def run():
     if ru.is_ok(ret):
         logging.debug("margin_available={0}, margin_balance={1}".format(ret['data'][0]['margin_available'],
                                                                         ret['data'][0]['margin_balance']))
-        if int(ret['data'][0]['margin_available']) == 0:
+        if ret['data'][0]['margin_available'] == 0:
             logging.debug("no available margin {0}".format(ret['data'][0]['margin_available']))
             return False
 
