@@ -15,14 +15,16 @@ from PyQt5.QtCore import pyqtSignal
 
 from gui.risk_window import RiskWindow
 from gui.sw_doc_window import SWDOCWindow
-from gui.xml_rc import *
+# from gui.xml_rc import *
 from qds import set_buniness_enabled, get_business_enabled, run_business, cancell_all_contract, close_all_contract
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
+from PyQt5.QtGui import QIcon
 from gui.sys_setting_window import SysSettingWindow
 from utils.config_helper import ConfigHelper, ConfigData
 from global_data.system import set_system_running, get_system_running, get_margin
+from res_rc import *
 
 start_point = 0
 lbl_cash = None
@@ -228,7 +230,9 @@ class Ui_qds_gui(object):
         self.frame = QtWidgets.QFrame(qds_gui)
         self.frame.setGeometry(QtCore.QRect(430, 80, 491, 311))
         self.frame.setAutoFillBackground(False)
-        self.frame.setStyleSheet("background-image: url(:/newPrefix/back.png);")
+        # self.frame.setStyleSheet("background-image: url(:/newPrefix/back.png);")
+        self.frame.setStyleSheet("background-image: url(:/res/res/back.png);")
+        self.setWindowIcon(QIcon('res/qds.ico'))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
@@ -437,8 +441,8 @@ class Ui_qds_gui(object):
                 self.txt_level_rate.setText('请输入大于0的整数')
                 self.txt_level_rate.setFocus()
                 return
-            if not self.is_number(max_number):
-                self.max_number.setText('请输入大于0的整数')
+            if not self.is_number(max_number) or int(max_number) > 30:
+                self.max_number.setText('请输入大于0小于30的整数')
                 self.max_number.setFocus()
                 return
 

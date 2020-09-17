@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="res">
+    <file>res/qds.ico</file>
+	<file>res/back.png</file>
+  </qresource>
+</RCC>

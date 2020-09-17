@@ -1,6 +1,7 @@
 打包命令：
 带控制台：   pyinstaller.exe -F qds.py --hidden-import talib.stream
 不带控制台： pyinstaller.exe -w -F qds.py --hidden-import talib.stream
+带图标：D:\Work\qds>pyinstaller.exe -w -F -i d:\Work\qds\res\qds.ico qds_view.py --hidden-import talib.stream
 
 pip install PyQt5 -i https://pypi.tuna.tsinghua.edu.cn/simple
 pip3 install PyQt5-tools -i http://pypi.douban.com/simple --trusted-host=pypi.douban.com
