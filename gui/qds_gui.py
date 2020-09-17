@@ -442,8 +442,8 @@ class Ui_qds_gui(object):
                 self.txt_level_rate.setFocus()
                 return
             if not self.is_number(max_number) or int(max_number) > 30:
-                self.max_number.setText('请输入大于0小于30的整数')
-                self.max_number.setFocus()
+                self.txt_max_num.setText('请输入大于0小于30的整数')
+                self.txt_max_num.setFocus()
                 return
 
             self.btn_switch.setText('停止')
