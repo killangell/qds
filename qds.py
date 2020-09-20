@@ -184,7 +184,7 @@ def run():
         period, ma_fast, ma_slow, open_offset, open_interval, stop_offset, level_rate, max_open_number))
 
     if not get_system_running(): return False
-    ret = dm.get_contract_kline(symbol=symbol_period, period=period, size=ma_slow+5)
+    ret = dm.get_contract_kline(symbol=symbol_period, period=period, size=300)
     if not ru.is_ok(ret):
         logging.debug("get_contract_kline failed")
         return False

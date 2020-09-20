@@ -3,6 +3,7 @@ import sys
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 
+from global_data.system import get_system_running
 from gui.qds_gui import Ui_qds_gui
 from utils.singleton import Singleton
 
@@ -20,7 +21,11 @@ class QdsWindow(QtWidgets.QMainWindow, Ui_qds_gui):
         self.setupUi(self)
 
     def closeEvent(self, event):  # 函数名固定不可变
-        instance.delete_lok_file()
+        if get_system_running():
+            QMessageBox.information(self, '提示', '请先停止软件运行，再关闭')
+            event.ignore()
+        else:
+            instance.delete_lok_file()
 
     """
     def closeEvent(self, event):#函数名固定不可变
