@@ -17,6 +17,7 @@ class ConfigData:
         self._open_interval = None
         self._stop_earning_offset = None
         self._max_open_number = None
+        self._max_open_number_limit = None
         self._qds_id = None
 
 
@@ -58,6 +59,7 @@ class ConfigHelper:
         config._stop_earning_offset = self.get_node_value('stop_earning_offset')
         config._level_rate = self.get_node_value('level_rate')
         config._max_open_number = self.get_node_value('max_open_number')
+        config._max_open_number_limit = self.get_node_value('max_open_number_limit')
         config._qds_id = self.get_node_value('qds_id')
 
     def save(self, config=ConfigData()):
@@ -71,6 +73,8 @@ class ConfigHelper:
         self.set_node_value('stop_earning_offset', config._stop_earning_offset)
         self.set_node_value('level_rate', config._level_rate)
         self.set_node_value('max_open_number', config._max_open_number)
+        if config._max_open_number_limit:
+            self.set_node_value('max_open_number_limit', config._max_open_number_limit)
         self.set_node_value('qds_id', config._qds_id)
         with open(self.file, "w", encoding="utf-8") as f:
             self.dom.writexml(f)
@@ -93,8 +97,9 @@ if __name__ == "__main__":
         h = config._stop_earning_offset
         i = config._level_rate
         j = config._max_open_number
-        k = config._qds_id
-        l = 0
+        k = config._max_open_number_limit
+        l = config._qds_id
+        m = 0
 
         config_to_save = ConfigData()
         config_to_save._access_key = '_access_key'
@@ -107,6 +112,7 @@ if __name__ == "__main__":
         config_to_save._stop_earning_offset = '_stop_earning_offset'
         config_to_save._level_rate = '_level_rate'
         config_to_save._max_open_number = 'max_open_number'
+        config_to_save._max_open_number_limit = 'max_open_number_limit'
         config_to_save._qds_id = 'qds_id'
         config_helper.save(config_to_save)
     else:

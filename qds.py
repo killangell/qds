@@ -67,6 +67,10 @@ open_interval = int(config._open_interval)
 level_rate = int(config._level_rate)
 # 最大开仓数量
 max_open_number = int(config._max_open_number)
+# 目前只支持BTC当季合约
+symbol_type = 'BTC'
+symbol_period = 'BTC_CQ'
+contract_type_period = 'quarter'
 
 # 行情历史
 trend_history = None
@@ -82,7 +86,7 @@ def qds_test_registration():
 
 
 def qds_test_authorize():
-    ret = dm.get_contract_account_position_info('BTC')
+    ret = dm.get_contract_account_position_info(symbol_type)
     if not ru.is_ok(ret):
         logging.debug("qds_test_authorize failed")
         return False
@@ -103,13 +107,13 @@ def debug_ema(org_data=Organized()):
 
 
 def cancell_all_contract():
-    ret = dm.cancel_all_contract_order("BTC")
+    ret = dm.cancel_all_contract_order(symbol_type)
     if ru.is_ok(ret):
         logging.debug("cancel_all_contract_order successfully")
     else:
         logging.debug("cancel_all_contract_order failed")
 
-    ret = dm.cancel_all_contract_trigger("BTC")
+    ret = dm.cancel_all_contract_trigger(symbol_type)
     if ru.is_ok(ret):
         logging.debug("cancel_all_contract_trigger successfully")
     else:
@@ -117,7 +121,7 @@ def cancell_all_contract():
 
 
 def close_all_contract():
-    ret = dm.get_contract_position_info("BTC")
+    ret = dm.get_contract_position_info(symbol_type)
     if not ru.is_ok(ret):
         logging.debug("close_all_contract get_contract_position_info failed")
         return False
@@ -125,7 +129,7 @@ def close_all_contract():
     sell_count = int(cpi_helper.get_orders_count('sell', ret))
 
     if buy_count > 0:
-        ret = dm.send_lightning_close_position("BTC", "next_quarter", '',
+        ret = dm.send_lightning_close_position(symbol_type, contract_type_period, '',
                                                buy_count,
                                                "sell",
                                                '', None)
@@ -136,7 +140,7 @@ def close_all_contract():
             logging.debug("close_all_contract send_lightning_close_position failed, direction={0}, volume={1}".format(
                 "sell", buy_count))
     if sell_count > 0:
-        ret = dm.send_lightning_close_position("BTC", "next_quarter", '',
+        ret = dm.send_lightning_close_position(symbol_type, contract_type_period, '',
                                                sell_count,
                                                "buy",
                                                '', None)
@@ -147,6 +151,9 @@ def close_all_contract():
             logging.debug("close_all_contract send_lightning_close_position failed, direction={0}, volume={1}".format(
                 "buy", sell_count))
 
+
+# 解决一个竞争问题，当获取持仓信息，限价挂单数量，触发挂单数量的时候，同时有挂单成交，造成一些数据不匹配
+g_fix_race_check_one_more_time = False
 # holding 持仓， pending 挂单
 def run():
     """
@@ -171,12 +178,13 @@ def run():
     global max_open_number
     global trend_history
     global_data = Organized()
+
     logging.debug("qds params: period={0}, ma_fast={1}, ma_slow={2}, open_offset={3}, open_interval={4}, "
                   "stop_offset={5}, level_rate={6}, max_open_number={7}".format(
         period, ma_fast, ma_slow, open_offset, open_interval, stop_offset, level_rate, max_open_number))
 
     if not get_system_running(): return False
-    ret = dm.get_contract_kline(symbol='BTC_NQ', period=period, size=100)
+    ret = dm.get_contract_kline(symbol=symbol_period, period=period, size=ma_slow+5)
     if not ru.is_ok(ret):
         logging.debug("get_contract_kline failed")
         return False
@@ -216,33 +224,41 @@ def run():
             "trend={5} last: {4} ma{0}:{1}, ma{2}:{3}".format(ma_fast, last_ema_fast, ma_slow, last_ema_slow, ts,
                                                               trend))
         if not get_system_running(): return False
-        ret = dm.cancel_all_contract_order("BTC")
+        ret = dm.cancel_all_contract_order(symbol_type)
         if ru.is_ok(ret):
             logging.debug("cancel_all_contract_order successfully at trend changed")
         else:
-            logging.debug("cancel_all_contract_order failed at trend changed")
+            if ru.is_no_order(ret):
+                logging.debug("cancel_all_contract_order no orders")
+            else:
+                logging.debug("cancel_all_contract_order failed at trend changed")
+                return False
 
         if not get_system_running(): return False
-        ret = dm.cancel_all_contract_trigger("BTC")
+        ret = dm.cancel_all_contract_trigger(symbol_type)
         if ru.is_ok(ret):
             logging.debug("cancel_all_contract_trigger successfully at trend changed")
         else:
-            logging.debug("cancel_all_contract_trigger failed at trend changed")
+            if ru.is_no_order(ret):
+                logging.debug("cancel_all_contract_trigger no orders")
+            else:
+                logging.debug("cancel_all_contract_trigger failed at trend changed")
+                return False
 
     if not get_system_running(): return False
-    ret = dm.get_contract_account_position_info('BTC')
+    ret = dm.get_contract_account_position_info(symbol_type)
     if ru.is_ok(ret):
-        logging.debug("margin_available={0}, margin_balance={1}".format(ret['data'][0]['margin_available'],
-                                                                        ret['data'][0]['margin_balance']))
-        margin = ret['data'][0]['margin_available']
-        set_margin(margin)
-        if margin == 0:
-            logging.debug("no available margin {0}".format(ret['data'][0]['margin_available']))
+        available = ret['data'][0]['margin_available']
+        balance = ret['data'][0]['margin_balance']
+        logging.debug("margin_available={0}, margin_balance={1}".format(available, balance))
+        set_margin(available, balance)
+        if available == 0.0 and balance == 0.0:
+            logging.debug("no available margin {0}, {1}".format(available, balance))
             return False
 
     # 获取当前持仓多单数量，空单数量，价格
     if not get_system_running(): return False
-    ret = dm.get_contract_position_info("BTC")
+    ret = dm.get_contract_position_info(symbol_type)
     if not ru.is_ok(ret):
         logging.debug("get_contract_position_info failed")
         return False
@@ -255,7 +271,7 @@ def run():
 
     # 获取当前限价挂单的方向以及价格
     if not get_system_running(): return False
-    ret = dm.get_contract_open_orders("BTC")
+    ret = dm.get_contract_open_orders(symbol_type)
     if not ru.is_ok(ret):
         logging.debug("get_contract_open_orders failed")
         return False
@@ -270,7 +286,7 @@ def run():
 
     # 获取当前委托挂单多单数量，空单数量
     if not get_system_running(): return False
-    ret = dm.get_contract_trigger_openorders("BTC")
+    ret = dm.get_contract_trigger_openorders(symbol_type)
     if not ru.is_ok(ret):
         logging.debug("get_contract_trigger_openorders failed")
         return False
@@ -354,8 +370,8 @@ def run():
     if limit_holding_against_trend_count > 0:
         logging.debug("limit_holding_against_trend_count={0}".format(limit_holding_against_trend_count))
         if not get_system_running(): return False
-        ret = dm.send_lightning_close_position("BTC", "next_quarter", '',
-                                               round(limit_holding_against_trend_count),
+        ret = dm.send_lightning_close_position(symbol_type, contract_type_period, '',
+                                               int(limit_holding_against_trend_count),
                                                limit_holding_against_trend_close_direction,
                                                '', None)
         if ru.is_ok(ret):
@@ -370,7 +386,7 @@ def run():
     if limit_pending_against_trend_count > 0:
         logging.debug("limit_pending_against_trend_count={0}".format(limit_pending_against_trend_count))
         if not get_system_running(): return False
-        ret = dm.cancel_all_contract_order("BTC")
+        ret = dm.cancel_all_contract_order(symbol_type)
         if ru.is_ok(ret):
             limit_pending_on_trend_count = 0
             limit_pending_against_trend_count = 0
@@ -399,7 +415,7 @@ def run():
                         direction = limit_pending_on_trend_open_direction
                         if price > 0 and volume > 0:
                             if not get_system_running(): return False
-                            ret = dm.send_contract_order(symbol='BTC', contract_type='next_quarter', contract_code='',
+                            ret = dm.send_contract_order(symbol=symbol_type, contract_type=contract_type_period, contract_code='',
                                                          client_order_id='', price=price, volume=int(volume),
                                                          direction=direction, offset='open', lever_rate=level_rate,
                                                          order_price_type='limit')
@@ -412,15 +428,23 @@ def run():
                                 logging.debug("send_contract_order failed")
                                 return False
         elif limit_pending_on_trend_count != max_on_trend_count:
-            if not get_system_running(): return False
-            ret = dm.cancel_all_contract_order('BTC')
-            if ru.is_ok(ret):
+            global g_fix_race_check_one_more_time
+            if limit_pending_on_trend_count < max_on_trend_count and not g_fix_race_check_one_more_time:
                 logging.debug(
-                    "cancel_all_contract_order successfully, limit_pending_on_trend_count {0} not match with "
-                    "max_on_trend_count {1}".format(limit_pending_on_trend_count, max_on_trend_count))
+                    "Fix race issue: limit_pending_on_trend_count {0} is smaller than max_on_trend_count {1}, "
+                    "need to check one more time".format(limit_pending_on_trend_count, max_on_trend_count))
+                g_fix_race_check_one_more_time = True
             else:
-                logging.debug("cancel_all_contract_order failed")
-                return False
+                g_fix_race_check_one_more_time = False
+                if not get_system_running(): return False
+                ret = dm.cancel_all_contract_order(symbol_type)
+                if ru.is_ok(ret):
+                    logging.debug(
+                        "cancel_all_contract_order successfully, limit_pending_on_trend_count {0} not match with "
+                        "max_on_trend_count {1}".format(limit_pending_on_trend_count, max_on_trend_count))
+                else:
+                    logging.debug("cancel_all_contract_order failed")
+                    return False
         else:
             logging.debug("limit_pending_on_trend_count={0}".format(limit_pending_on_trend_count))
             for i in range(0, len(limit_pending_on_trend_price_list)):
@@ -432,7 +456,7 @@ def run():
                         is_best_limit_price = True
                 if not is_best_limit_price:
                     if not get_system_running(): return False
-                    ret = dm.cancel_all_contract_order('BTC')
+                    ret = dm.cancel_all_contract_order(symbol_type)
                     if ru.is_ok(ret):
                         logging.debug(
                             "cancel_all_contract_order successfully, price={0} is not one of limit_best_price".format(
@@ -449,7 +473,7 @@ def run():
     if available_trigger_pending_on_trend_count > 0:
         logging.debug("available_trigger_pending_on_trend_count={0}".format(available_trigger_pending_on_trend_count))
         if not get_system_running(): return False
-        ret = dm.send_contract_trigger_order(symbol='BTC', contract_type='next_quarter',
+        ret = dm.send_contract_trigger_order(symbol=symbol_type, contract_type=contract_type_period,
                                              contract_code=None,
                                              trigger_type=stop_earning_trigger_type,
                                              trigger_price=round(stop_earning_trigger_price),

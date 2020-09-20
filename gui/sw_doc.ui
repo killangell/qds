@@ -26,7 +26,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="tab_func_doc">
     <attribute name="title">
@@ -63,6 +63,21 @@
      <string>关于作者</string>
     </attribute>
     <widget class="QPlainTextEdit" name="txt_author_doc">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>431</width>
+       <height>281</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tab_qa">
+    <attribute name="title">
+     <string>Q &amp;&amp; A</string>
+    </attribute>
+    <widget class="QPlainTextEdit" name="txt_qa">
      <property name="geometry">
       <rect>
        <x>0</x>

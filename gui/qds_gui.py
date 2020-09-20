@@ -28,6 +28,7 @@ from res_rc import *
 
 start_point = 0
 lbl_cash = None
+g_config = ConfigData()
 
 class Runthread(QtCore.QThread):
     # python3,pyqt5与之前的版本有些不一�?
@@ -45,9 +46,9 @@ class Runthread(QtCore.QThread):
         while True:
             # self._signal.emit('hello');  # 可以在这里写信号焕发
             self.read_logs()
-            margin = get_margin()
+            available, balance = get_margin()
             if lbl_cash:
-                lbl_cash.setText("BTC: {0}".format(margin))
+                lbl_cash.setText("BTC: 可用：{0}  资产：{1}".format(available, balance))
             time.sleep(1)
         # logging.debug("stop reading logs")
 
@@ -154,7 +155,7 @@ class Ui_qds_gui(object):
         self.cbx_category = QtWidgets.QComboBox(self.groupBox)
         self.cbx_category.setGeometry(QtCore.QRect(100, 80, 81, 31))
         self.cbx_category.setObjectName("cbx_category")
-        self.cbx_category.addItems(['BTC'])
+        self.cbx_category.addItems(['BTC当季'])
         self.label_2 = QtWidgets.QLabel(self.groupBox)
         self.label_2.setGeometry(QtCore.QRect(30, 140, 54, 12))
         self.label_2.setObjectName("label_2")
@@ -225,7 +226,7 @@ class Ui_qds_gui(object):
         self.btn_reset.setGeometry(QtCore.QRect(300, 330, 81, 31))
         self.btn_reset.setObjectName("btn_reset")
         self.lbl_total_cash = QtWidgets.QLabel(qds_gui)
-        self.lbl_total_cash.setGeometry(QtCore.QRect(440, 30, 200, 41))
+        self.lbl_total_cash.setGeometry(QtCore.QRect(440, 30, 300, 41))
         self.lbl_total_cash.setObjectName("lbl_total_cash")
         self.frame = QtWidgets.QFrame(qds_gui)
         self.frame.setGeometry(QtCore.QRect(430, 80, 491, 311))
@@ -268,6 +269,9 @@ class Ui_qds_gui(object):
         author_doc = QAction("关于作者", self)
         author_doc.triggered.connect(self.author_window)
         sw_doc_menu.addAction(author_doc)
+        qa_doc = QAction("Q && A", self)
+        qa_doc.triggered.connect(self.qa_window)
+        sw_doc_menu.addAction(qa_doc)
 
         risk_menu = bar.addMenu("交易风险")
         warning_action = QAction("交易警告", self)
@@ -306,6 +310,8 @@ class Ui_qds_gui(object):
         file = 'config.xml'
         config_helper = ConfigHelper(file)
         config = ConfigData()
+        global g_config
+        g_config = config
         ret = config_helper.init_root()
         if ret:
             config_helper.parse(config)
@@ -379,6 +385,9 @@ class Ui_qds_gui(object):
     def author_window(self):
         self.pop_sw_doc_window(2)
 
+    def qa_window(self):
+        self.pop_sw_doc_window(3)
+
     def pop_risk_window(self):
         self.ui = RiskWindow()
         self.ui.setWindowFlags(self.ui.windowFlags() & ~Qt.WindowMaximizeButtonHint)
@@ -441,10 +450,16 @@ class Ui_qds_gui(object):
                 self.txt_level_rate.setText('请输入大于0的整数')
                 self.txt_level_rate.setFocus()
                 return
-            if not self.is_number(max_number) or int(max_number) > 30:
-                self.txt_max_num.setText('请输入大于0小于30的整数')
+            if not self.is_number(max_number):
+                self.txt_max_num.setText('请输入大于0的整数')
                 self.txt_max_num.setFocus()
                 return
+            global g_config
+            if int(max_number) > 30 and not g_config._max_open_number_limit:
+                self.txt_max_num.setText('最大只支持30张')
+                self.txt_max_num.setFocus()
+                return
+
 
             self.btn_switch.setText('停止')
             set_system_running(True)

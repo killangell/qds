@@ -36,6 +36,18 @@ class ReturnUtil:
         return ReturnUtil.get_status(return_val) == 'ok'
 
     @staticmethod
+    def get_err_code(return_val):
+        return return_val['err_code']
+
+    @staticmethod
+    def get_err_msg(return_val):
+        return return_val['err_msg']
+
+    @staticmethod
+    def is_no_order(return_val):
+        return ReturnUtil.get_err_code(return_val) == 1051
+
+    @staticmethod
     def get_ts(return_val):
         return return_val['ts']
 

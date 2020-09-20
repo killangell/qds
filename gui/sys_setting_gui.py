@@ -5,12 +5,12 @@
 # Created by: PyQt5 UI code generator 5.13.2
 #
 # WARNING! All changes made in this file will be lost!
-
-
+import wmi
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 
 from qds import qds_test_authorize, qds_test_registration
+from utils.mail_ex import *
 from utils.config_helper import ConfigData, ConfigHelper
 
 
@@ -96,7 +96,7 @@ class Ui_obj_sys_setting(object):
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_huobi), _translate("obj_sys_setting", "Huobi"))
         # self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_okex), _translate("obj_sys_setting", "OKEx"))
         self.tab_sys_setting.setTabText(self.tab_sys_setting.indexOf(self.tab_authorize), _translate("obj_sys_setting", "交易授权"))
-        self.label_3.setText(_translate("obj_sys_setting", "您的邮箱地址"))
+        self.label_3.setText(_translate("obj_sys_setting", "您的邮箱"))
         self.btn_register.setText(_translate("obj_sys_setting", "提交注册"))
         self.btn_save_registration_info.setText(_translate("obj_sys_setting", "保存注册信息"))
         self.label_4.setText(_translate("obj_sys_setting", "第一步:提交注册，第二步:等待作者返回注册信息，第三步:保存注册信息"))
@@ -110,6 +110,27 @@ class Ui_obj_sys_setting(object):
         self.btn_authorize_test.clicked.connect(self.test_authorize)
         self.btn_save_registration_info.clicked.connect(self.save_registration_info)
         self.btn_registration_info_test.clicked.connect(self.test_registration_info)
+        self.btn_register.clicked.connect(self.send_registration_info)
+
+    def send_registration_info(self):
+        contact_info = self.txt_mail_address.toPlainText().strip()
+        if not contact_info:
+            QMessageBox.information(self, '提示', '邮箱地址不能为空')
+            return
+        ret = qds_test_registration()
+        if ret:
+            QMessageBox.information(self, '提示', '已注册成功，无需再次注册')
+            return
+        c = wmi.WMI()
+        first_disk_serial_no = c.Win32_DiskDrive()[0].SerialNumber.strip()
+        first_process_id = c.Win32_Processor()[0].ProcessorId.strip()
+        title = "申请注册"
+        content = "联系方式：{0}\n disk_sn：{1}\n process_id: {2}".format(contact_info, first_disk_serial_no, first_process_id)
+        ret = MailEx.send_mail_ex(title, content)
+        if ret:
+            QMessageBox.information(self, '提示', '提交注册成功，请等待作者回应。')
+        else:
+            QMessageBox.information(self, '提示', '提交注册失败。')
 
     def set_authorize(self):
         access_key = self.txt_access_key.toPlainText().strip()
