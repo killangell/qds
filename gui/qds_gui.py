@@ -491,7 +491,7 @@ class Ui_qds_gui(object):
 
     def retranslateUi(self, qds_gui):
         _translate = QtCore.QCoreApplication.translate
-        qds_gui.setWindowTitle(_translate("qds_gui", "EMA双均线交易辅助系统"))
+        qds_gui.setWindowTitle(_translate("qds_gui", "EMA双均线交易辅助系统" + " " + os.getcwd()))
         self.groupBox.setTitle(_translate("qds_gui", "参数设置"))
         self.label_4.setText(_translate("qds_gui", "交易所"))
         self.label.setText(_translate("qds_gui", "交易品种"))
