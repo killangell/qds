@@ -9,6 +9,7 @@ import logging
 import os
 import threading
 import time
+from pprint import pformat
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal
@@ -16,7 +17,8 @@ from PyQt5.QtCore import pyqtSignal
 from gui.risk_window import RiskWindow
 from gui.sw_doc_window import SWDOCWindow
 # from gui.xml_rc import *
-from qds import set_buniness_enabled, get_business_enabled, run_business, cancell_all_contract, close_all_contract
+from qds import set_buniness_enabled, get_business_enabled, run_business, cancell_all_contract, close_all_contract, \
+    get_g_ret
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -103,7 +105,10 @@ class Runthread_Business(QtCore.QThread):
                     run_business(self.period, self.ma_fast, self.ma_slow, self.open_offset, self.open_interval,
                                  self.stop_offset, self.level_rate, self.max_open_number)
                 except Exception as e:
-                    pass
+                    ret = get_g_ret()
+                    logging.debug("running count={0} ret={1}".format(int(count / 60), pformat(ret)))
+                    logging.debug("running count={0} exception={1}".format(int(count / 60), e))
+
             count += 1
             time.sleep(1)
 

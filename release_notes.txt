@@ -16,3 +16,6 @@ https://blog.csdn.net/weixin_41929524/article/details/81475935
 
 pyuic5 -o qds_gui.py qds_gui.ui
 pyrcc5.exe -o xml_rc.py xml.qrc
+
+
+loging.FileHandler() 的 encoding 从 None 改为了 'utf-8'

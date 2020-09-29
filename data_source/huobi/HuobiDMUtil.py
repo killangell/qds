@@ -17,11 +17,9 @@ import requests
 
 # timeout in 20 seconds:
 TIMEOUT = 20
-SLEEP_TIME = 0
 
 #各种请求,获取数据方式
 def http_get_request(url, params, add_to_headers=None):
-    time.sleep(SLEEP_TIME)
     headers = {
         "Content-type": "application/x-www-form-urlencoded",
         'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0'
@@ -40,7 +38,6 @@ def http_get_request(url, params, add_to_headers=None):
         return {"status":"fail","msg": "%s"%e}
 
 def http_post_request(url, params, add_to_headers=None):
-    time.sleep(SLEEP_TIME)
     headers = {
         "Accept": "application/json",
         'Content-Type': 'application/json',

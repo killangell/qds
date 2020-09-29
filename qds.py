@@ -6,7 +6,7 @@ import talib
 from openpyxl import Workbook
 from pandas import np
 import matplotlib.pyplot as plt
-from pprint import pprint
+from pprint import pprint, pformat
 from data_source.huobi.static_data_source.huobi_4hour_data_source import Huobi4HourData
 from data_source.kline_adapter_huobi import KLineAdapterHuobi
 from global_data.system import set_system_running, get_system_running, set_margin
@@ -32,7 +32,6 @@ logging.basicConfig(level=logging.DEBUG,  # 控制台打印的日志级别
                     # 日志格式
                     )
 
-# https://docs.huobigroup.com/docs/dm/v1/cn/#8664ee712b
 URL = 'https://api.btcgateway.pro'
 
 
@@ -74,24 +73,26 @@ contract_type_period = 'quarter'
 
 # 行情历史
 trend_history = None
+g_ret = None
+
+
+def get_g_ret():
+    global g_ret
+    return g_ret
 
 
 def qds_test_registration():
     register_info = Register.get_register_info()
     if register_info != config._qds_id:
-        logging.debug("qds_test_registration failed")
         return False
-    logging.debug("qds_test_registration ok")
     return True
 
 
 def qds_test_authorize():
     ret = dm.get_contract_account_position_info(symbol_type)
     if not ru.is_ok(ret):
-        logging.debug("qds_test_authorize failed")
         return False
     else:
-        logging.debug("qds_test_authorize ok")
         return True
 
 
@@ -111,13 +112,19 @@ def cancell_all_contract():
     if ru.is_ok(ret):
         logging.debug("cancel_all_contract_order successfully")
     else:
-        logging.debug("cancel_all_contract_order failed")
+        if ru.is_no_order(ret):
+            logging.debug("cancel_all_contract_order no order")
+        else:
+            logging.debug("cancel_all_contract_order failed")
 
     ret = dm.cancel_all_contract_trigger(symbol_type)
     if ru.is_ok(ret):
         logging.debug("cancel_all_contract_trigger successfully")
     else:
-        logging.debug("cancel_all_contract_trigger failed")
+        if ru.is_no_order(ret):
+            logging.debug("cancel_all_contract_trigger no order")
+        else:
+            logging.debug("cancel_all_contract_trigger failed")
 
 
 def close_all_contract():
@@ -163,8 +170,9 @@ def run():
     * 如果没有顺势持仓，则（如果没有限价挂单，则按最优价格挂单；如果有限价挂单，检查价位是否合理，如果不合理则撤销重新挂单）
     * 如果有顺势持仓，则只挂止盈委托挂单，在慢速ema价格上设置止盈点
     """
-    ret = qds_test_registration()
-    if not ret:
+    global g_ret
+    g_ret = qds_test_registration()
+    if not g_ret:
         logging.debug("Error, software is not correctly registered. Please contact 313970187@qq.com to register")
         return False
 
@@ -184,11 +192,11 @@ def run():
         period, ma_fast, ma_slow, open_offset, open_interval, stop_offset, level_rate, max_open_number))
 
     if not get_system_running(): return False
-    ret = dm.get_contract_kline(symbol=symbol_period, period=period, size=300)
-    if not ru.is_ok(ret):
-        logging.debug("get_contract_kline failed")
+    g_ret = dm.get_contract_kline(symbol=symbol_period, period=period, size=300)
+    if not ru.is_ok(g_ret):
+        logging.debug("get_contract_kline failed, ret={0}".format(pformat(g_ret)))
         return False
-    global_data = KLineAdapterHuobi.ParseData(ret['data'])
+    global_data = KLineAdapterHuobi.ParseData(g_ret['data'])
 
     close_list = global_data._close_list
     ma_fast_list = talib.EMA(np.array(close_list), timeperiod=ma_fast)
@@ -219,37 +227,39 @@ def run():
     # 趋势发生变化，撤销所有的限价挂单以及委托挂单
     logging.debug("ts:{0} ma{1}:{2}, ma{3}:{4}".format(ts, ma_fast, last_ema_fast, ma_slow, last_ema_slow))
     if trend_history != trend:
-        trend_history = trend
         logging.debug(
             "trend={5} last: {4} ma{0}:{1}, ma{2}:{3}".format(ma_fast, last_ema_fast, ma_slow, last_ema_slow, ts,
                                                               trend))
         if not get_system_running(): return False
-        ret = dm.cancel_all_contract_order(symbol_type)
-        if ru.is_ok(ret):
+        g_ret = dm.cancel_all_contract_order(symbol_type)
+        if ru.is_ok(g_ret):
             logging.debug("cancel_all_contract_order successfully at trend changed")
         else:
-            if ru.is_no_order(ret):
+            if ru.is_no_order(g_ret):
                 logging.debug("cancel_all_contract_order no orders")
             else:
-                logging.debug("cancel_all_contract_order failed at trend changed")
+                logging.debug("cancel_all_contract_order failed at trend changed, ret={0}".format(pformat(g_ret)))
                 return False
 
         if not get_system_running(): return False
-        ret = dm.cancel_all_contract_trigger(symbol_type)
-        if ru.is_ok(ret):
+        g_ret = dm.cancel_all_contract_trigger(symbol_type)
+        if ru.is_ok(g_ret):
             logging.debug("cancel_all_contract_trigger successfully at trend changed")
         else:
-            if ru.is_no_order(ret):
+            if ru.is_no_order(g_ret):
                 logging.debug("cancel_all_contract_trigger no orders")
             else:
-                logging.debug("cancel_all_contract_trigger failed at trend changed")
+                logging.debug("cancel_all_contract_trigger failed at trend changed, ret={0}".format(pformat(g_ret)))
                 return False
 
+        # 确保撤单成功再修改趋势，否则下次会再次执行撤单操作
+        trend_history = trend
+
     if not get_system_running(): return False
-    ret = dm.get_contract_account_position_info(symbol_type)
-    if ru.is_ok(ret):
-        available = ret['data'][0]['margin_available']
-        balance = ret['data'][0]['margin_balance']
+    g_ret = dm.get_contract_account_position_info(symbol_type)
+    if ru.is_ok(g_ret):
+        available = g_ret['data'][0]['margin_available']
+        balance = g_ret['data'][0]['margin_balance']
         logging.debug("margin_available={0}, margin_balance={1}".format(available, balance))
         set_margin(available, balance)
         if available == 0.0 and balance == 0.0:
@@ -258,45 +268,45 @@ def run():
 
     # 获取当前持仓多单数量，空单数量，价格
     if not get_system_running(): return False
-    ret = dm.get_contract_position_info(symbol_type)
-    if not ru.is_ok(ret):
-        logging.debug("get_contract_position_info failed")
+    g_ret = dm.get_contract_position_info(symbol_type)
+    if not ru.is_ok(g_ret):
+        logging.debug("get_contract_position_info failed, ret={0}".format(pformat(g_ret)))
         return False
-    cpi_helper.log_all_orders("buy", ret)
-    cpi_helper.log_all_orders('sell', ret)
-    limit_holding_buy_count = cpi_helper.get_orders_count('buy', ret)
-    limit_holding_buy_price = cpi_helper.get_price('buy', ret)
-    limit_holding_sell_count = cpi_helper.get_orders_count('sell', ret)
-    limit_holding_sell_price = cpi_helper.get_price('sell', ret)
+    cpi_helper.log_all_orders("buy", g_ret)
+    cpi_helper.log_all_orders('sell', g_ret)
+    limit_holding_buy_count = cpi_helper.get_orders_count('buy', g_ret)
+    limit_holding_buy_price = cpi_helper.get_price('buy', g_ret)
+    limit_holding_sell_count = cpi_helper.get_orders_count('sell', g_ret)
+    limit_holding_sell_price = cpi_helper.get_price('sell', g_ret)
 
     # 获取当前限价挂单的方向以及价格
     if not get_system_running(): return False
-    ret = dm.get_contract_open_orders(symbol_type)
-    if not ru.is_ok(ret):
-        logging.debug("get_contract_open_orders failed")
+    g_ret = dm.get_contract_open_orders(symbol_type)
+    if not ru.is_ok(g_ret):
+        logging.debug("get_contract_open_orders failed, ret={0}".format(pformat(g_ret)))
         return False
-    coo_helper.log_all_orders('buy', ret)
-    coo_helper.log_all_orders('sell', ret)
-    limit_pending_buy_count = coo_helper.get_orders_count('buy', 'open', ret)  # 开仓
-    limit_pending_close_sell_count = coo_helper.get_orders_count('sell', 'close', ret)  # 平仓
-    limit_pending_sell_count = coo_helper.get_orders_count('sell', 'open', ret)
-    limit_pending_close_buy_count = coo_helper.get_orders_count('buy', 'close', ret)
-    limit_pending_buy_price_list = coo_helper.get_price('buy', 'open', ret)
-    limit_pending_sell_price_list = coo_helper.get_price('sell', 'open', ret)
+    coo_helper.log_all_orders('buy', g_ret)
+    coo_helper.log_all_orders('sell', g_ret)
+    limit_pending_buy_count = coo_helper.get_orders_count('buy', 'open', g_ret)  # 开仓
+    limit_pending_close_sell_count = coo_helper.get_orders_count('sell', 'close', g_ret)  # 平仓
+    limit_pending_sell_count = coo_helper.get_orders_count('sell', 'open', g_ret)
+    limit_pending_close_buy_count = coo_helper.get_orders_count('buy', 'close', g_ret)
+    limit_pending_buy_price_list = coo_helper.get_price('buy', 'open', g_ret)
+    limit_pending_sell_price_list = coo_helper.get_price('sell', 'open', g_ret)
 
     # 获取当前委托挂单多单数量，空单数量
     if not get_system_running(): return False
-    ret = dm.get_contract_trigger_openorders(symbol_type)
-    if not ru.is_ok(ret):
-        logging.debug("get_contract_trigger_openorders failed")
+    g_ret = dm.get_contract_trigger_openorders(symbol_type)
+    if not ru.is_ok(g_ret):
+        logging.debug("get_contract_trigger_openorders failed, ret={0}".format(pformat(g_ret)))
         return False
-    ctoo_helper.log_all_orders('buy', ret)
-    ctoo_helper.log_all_orders('sell', ret)
-    trigger_holding_buy_count = ctoo_helper.get_orders_count('buy', 'close', ret)
-    trigger_holding_sell_count = ctoo_helper.get_orders_count('sell', 'close', ret)
+    ctoo_helper.log_all_orders('buy', g_ret)
+    ctoo_helper.log_all_orders('sell', g_ret)
+    trigger_holding_buy_count = ctoo_helper.get_orders_count('buy', 'close', g_ret)
+    trigger_holding_sell_count = ctoo_helper.get_orders_count('sell', 'close', g_ret)
     # 获取当前委托挂单方向以及价格
-    trigger_holding_buy_order_price = round(ctoo_helper.get_order_price('buy', ret))
-    trigger_holding_sell_order_price = round(ctoo_helper.get_order_price('sell', ret))
+    trigger_holding_buy_order_price = round(ctoo_helper.get_order_price('buy', g_ret))
+    trigger_holding_sell_order_price = round(ctoo_helper.get_order_price('sell', g_ret))
 
     # 设置最大允许操作数量(挂单数量+持仓数量)
     max_on_trend_count = max_open_number
@@ -370,29 +380,29 @@ def run():
     if limit_holding_against_trend_count > 0:
         logging.debug("limit_holding_against_trend_count={0}".format(limit_holding_against_trend_count))
         if not get_system_running(): return False
-        ret = dm.send_lightning_close_position(symbol_type, contract_type_period, '',
+        g_ret = dm.send_lightning_close_position(symbol_type, contract_type_period, '',
                                                int(limit_holding_against_trend_count),
                                                limit_holding_against_trend_close_direction,
                                                '', None)
-        if ru.is_ok(ret):
+        if ru.is_ok(g_ret):
             limit_holding_against_trend_count = 0
             logging.debug("send_lightning_close_position successfully, direction={0}, volume={1}".format(
                 limit_holding_against_trend_close_direction, limit_holding_against_trend_count))
         else:
-            logging.debug("send_lightning_close_position failed")
+            logging.debug("send_lightning_close_position failed, ret={0}".format(pformat(g_ret)))
             return False
 
     # 撤销所有逆势限价挂单，简化操作，只要逆势挂单就撤销所有限价挂单
     if limit_pending_against_trend_count > 0:
         logging.debug("limit_pending_against_trend_count={0}".format(limit_pending_against_trend_count))
         if not get_system_running(): return False
-        ret = dm.cancel_all_contract_order(symbol_type)
-        if ru.is_ok(ret):
+        g_ret = dm.cancel_all_contract_order(symbol_type)
+        if ru.is_ok(g_ret):
             limit_pending_on_trend_count = 0
             limit_pending_against_trend_count = 0
             logging.debug("cancel_all_contract_order successfully")
         else:
-            logging.debug("cancel_all_contract_order failed")
+            logging.debug("cancel_all_contract_order failed, ret={0}".format(pformat(g_ret)))
             return False
 
     # 如果没有顺势持仓，则（如果没有限价挂单，则按最优价格挂单；如果有限价挂单，检查价位是否合理，如果不合理则撤销重新挂单）
@@ -415,17 +425,17 @@ def run():
                         direction = limit_pending_on_trend_open_direction
                         if price > 0 and volume > 0:
                             if not get_system_running(): return False
-                            ret = dm.send_contract_order(symbol=symbol_type, contract_type=contract_type_period, contract_code='',
+                            g_ret = dm.send_contract_order(symbol=symbol_type, contract_type=contract_type_period, contract_code='',
                                                          client_order_id='', price=price, volume=int(volume),
                                                          direction=direction, offset='open', lever_rate=level_rate,
                                                          order_price_type='limit')
-                            if ru.is_ok(ret):
+                            if ru.is_ok(g_ret):
                                 available_limit_pending_on_trend_count -= volume
                                 logging.debug(
                                     "send_contract_order successfully, price={0} volume={1} direction={2}".format(
                                         price, int(volume), direction))
                             else:
-                                logging.debug("send_contract_order failed")
+                                logging.debug("send_contract_order failed, ret={0}".format(pformat(g_ret)))
                                 return False
         elif limit_pending_on_trend_count != max_on_trend_count:
             global g_fix_race_check_one_more_time
@@ -437,13 +447,13 @@ def run():
             else:
                 g_fix_race_check_one_more_time = False
                 if not get_system_running(): return False
-                ret = dm.cancel_all_contract_order(symbol_type)
-                if ru.is_ok(ret):
+                g_ret = dm.cancel_all_contract_order(symbol_type)
+                if ru.is_ok(g_ret):
                     logging.debug(
                         "cancel_all_contract_order successfully, limit_pending_on_trend_count {0} not match with "
                         "max_on_trend_count {1}".format(limit_pending_on_trend_count, max_on_trend_count))
                 else:
-                    logging.debug("cancel_all_contract_order failed")
+                    logging.debug("cancel_all_contract_order failed, ret={0}".format(pformat(g_ret)))
                     return False
         else:
             logging.debug("limit_pending_on_trend_count={0}".format(limit_pending_on_trend_count))
@@ -456,13 +466,13 @@ def run():
                         is_best_limit_price = True
                 if not is_best_limit_price:
                     if not get_system_running(): return False
-                    ret = dm.cancel_all_contract_order(symbol_type)
-                    if ru.is_ok(ret):
+                    g_ret = dm.cancel_all_contract_order(symbol_type)
+                    if ru.is_ok(g_ret):
                         logging.debug(
                             "cancel_all_contract_order successfully, price={0} is not one of limit_best_price".format(
                                 price))
                     else:
-                        logging.debug("cancel_all_contract_order failed")
+                        logging.debug("cancel_all_contract_order failed, ret={0}".format(pformat(g_ret)))
                         return False
                     break
 
@@ -473,7 +483,7 @@ def run():
     if available_trigger_pending_on_trend_count > 0:
         logging.debug("available_trigger_pending_on_trend_count={0}".format(available_trigger_pending_on_trend_count))
         if not get_system_running(): return False
-        ret = dm.send_contract_trigger_order(symbol=symbol_type, contract_type=contract_type_period,
+        g_ret = dm.send_contract_trigger_order(symbol=symbol_type, contract_type=contract_type_period,
                                              contract_code=None,
                                              trigger_type=stop_earning_trigger_type,
                                              trigger_price=round(stop_earning_trigger_price),
@@ -483,12 +493,12 @@ def run():
                                              direction=stop_earning_direction,
                                              offset='close',
                                              lever_rate=level_rate)
-        if ru.is_ok(ret):
+        if ru.is_ok(g_ret):
             logging.debug("send_contract_trigger_order successfully, {0} {1} {2} {3} {4}".format(
                 stop_earning_trigger_type, round(stop_earning_trigger_price), round(stop_earning_order_price),
                 int(available_trigger_pending_on_trend_count), stop_earning_direction))
         else:
-            logging.debug("send_contract_trigger_order failed")
+            logging.debug("send_contract_trigger_order failed, ret={0}".format(pformat(g_ret)))
             return False
 
 
